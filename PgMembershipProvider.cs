@@ -1,5 +1,5 @@
 //
-// $Id$
+// PgMembershipProvider.cs
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -20,10 +20,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-// Copyright © 2006, 2007 Nauck IT KG		http://www.nauck-it.de
+// Copyright © 2006, 2007 Nauck IT KG
 //
 // Author:
-//	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//	Daniel Nauck		(daniel.nauck(at)rootbash(dot)com)
 
 using System;
 using System.Collections.Generic;
@@ -41,1469 +41,1446 @@ using System.Diagnostics;
 
 namespace NauckIT.PostgreSQLProvider
 {
-	public class PgMembershipProvider : MembershipProvider
-	{
-		private const string m_TableName = "Users";
-		private string m_ConnectionString = string.Empty;
-		private const int m_NewPasswordLength = 8;
+    public class PgMembershipProvider : MembershipProvider
+    {
+        private const string m_TableName = "Users";
+        private string m_ConnectionString = string.Empty;
+        private const int m_NewPasswordLength = 8;
 
-		// Used when determining encryption key values.
-		private MachineKeySection m_MachineKey = null;
+        // Used when determining encryption key values.
+        private MachineKeySection m_MachineKey = null;
 
-		/// <summary>
-		/// System.Configuration.Provider.ProviderBase.Initialize Method.
-		/// </summary>
-		public override void Initialize(string name, NameValueCollection config)
-		{
-			// Initialize values from web.config.
-			if (config == null)
-				throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
+        /// <summary>
+        /// System.Configuration.Provider.ProviderBase.Initialize Method.
+        /// </summary>
+        public override void Initialize(string name, NameValueCollection config)
+        {
+            // Initialize values from web.config.
+            if (config == null)
+                throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
 
-			if (string.IsNullOrEmpty(name))
-				name = Properties.Resources.MembershipProviderDefaultName;
+            if (string.IsNullOrEmpty(name))
+                name = Properties.Resources.MembershipProviderDefaultName;
 
-			if (string.IsNullOrEmpty(config["description"]))
-			{
-				config.Remove("description");
-				config.Add("description", Properties.Resources.MembershipProviderDefaultDescription);
-			}
+            if (string.IsNullOrEmpty(config["description"]))
+            {
+                config.Remove("description");
+                config.Add("description", Properties.Resources.MembershipProviderDefaultDescription);
+            }
 
-			// Initialize the abstract base class.
-			base.Initialize(name, config);
+            // Initialize the abstract base class.
+            base.Initialize(name, config);
 
-			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
-			m_MaxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"));
-			m_PasswordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"));
-			m_MinRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphanumericCharacters"], "1"));
-			m_MinRequiredPasswordLength = Convert.ToInt32(GetConfigValue(config["minRequiredPasswordLength"], "7"));
-			m_PasswordStrengthRegularExpression = Convert.ToString(GetConfigValue(config["passwordStrengthRegularExpression"], ""));
-			m_EnablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"));
-			m_EnablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "true"));
-			m_RequiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"));
-			m_RequiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"));
+            m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+            m_MaxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"));
+            m_PasswordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"));
+            m_MinRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphanumericCharacters"], "1"));
+            m_MinRequiredPasswordLength = Convert.ToInt32(GetConfigValue(config["minRequiredPasswordLength"], "7"));
+            m_PasswordStrengthRegularExpression = Convert.ToString(GetConfigValue(config["passwordStrengthRegularExpression"], ""));
+            m_EnablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"));
+            m_EnablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "true"));
+            m_RequiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"));
+            m_RequiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"));
 
-			// Get password encryption type.
-			string pwFormat = GetConfigValue(config["passwordFormat"], "Hashed");
-			switch (pwFormat)
-			{
-				case "Hashed":
-					m_PasswordFormat = MembershipPasswordFormat.Hashed;
-					break;
-				case "Encrypted":
-					m_PasswordFormat = MembershipPasswordFormat.Encrypted;
-					break;
-				case "Clear":
-					m_PasswordFormat = MembershipPasswordFormat.Clear;
-					break;
-				default:
-					throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
-			}
+            // Get password encryption type.
+            string pwFormat = GetConfigValue(config["passwordFormat"], "Hashed");
+            switch (pwFormat)
+            {
+                case "Hashed":
+                    m_PasswordFormat = MembershipPasswordFormat.Hashed;
+                    break;
+                case "Encrypted":
+                    m_PasswordFormat = MembershipPasswordFormat.Encrypted;
+                    break;
+                case "Clear":
+                    m_PasswordFormat = MembershipPasswordFormat.Clear;
+                    break;
+                default:
+                    throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
+            }
 
-			// Get connection string.
-			string connStrName = config["connectionStringName"];
+            // Get connection string.
+            string connStrName = config["connectionStringName"];
 
-			if (string.IsNullOrEmpty(connStrName))
-			{
-				throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
-			}
-			else
-			{
-				ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
+            if (string.IsNullOrEmpty(connStrName))
+            {
+                throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
+            }
+            else
+            {
+                ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
 
-				if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
-				{
-					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
-				}
+                if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
+                {
+                    throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
+                }
 
-				m_ConnectionString = ConnectionStringSettings.ConnectionString;
-			}
+                m_ConnectionString = ConnectionStringSettings.ConnectionString;
+            }
 
-			// Get encryption and decryption key information from the configuration.
-			Configuration cfg = WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath);
-			m_MachineKey = (MachineKeySection)cfg.GetSection("system.web/machineKey");
+            // Get encryption and decryption key information from the configuration.
+            Configuration cfg = WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath);
+            m_MachineKey = (MachineKeySection)cfg.GetSection("system.web/machineKey");
 
-			if (!m_PasswordFormat.Equals(MembershipPasswordFormat.Clear))
-			{
-				if (m_MachineKey == null)
-					throw new ArgumentNullException("system.web/machineKey", Properties.Resources.ErrArgumentNull);
+            if (!m_PasswordFormat.Equals(MembershipPasswordFormat.Clear))
+            {
+                if (m_MachineKey == null)
+                    throw new ArgumentNullException("system.web/machineKey", Properties.Resources.ErrArgumentNull);
 
-				if (m_MachineKey.ValidationKey.Contains("AutoGenerate"))
-					throw new ProviderException(Properties.Resources.ErrAutoGeneratedKeyNotSupported);
-			}
-		}
+                if (m_MachineKey.ValidationKey.Contains("AutoGenerate"))
+                    throw new ProviderException(Properties.Resources.ErrAutoGeneratedKeyNotSupported);
+            }
+        }
 
-		/// <summary>
-		/// System.Web.Security.MembershipProvider properties.
-		/// </summary>
-		#region System.Web.Security.MembershipProvider properties
-		private string m_ApplicationName = string.Empty;
-		private bool m_EnablePasswordReset = false;
-		private bool m_EnablePasswordRetrieval = false;
-		private bool m_RequiresQuestionAndAnswer = false;
-		private bool m_RequiresUniqueEmail = false;
-		private int m_MaxInvalidPasswordAttempts = 0;
-		private int m_PasswordAttemptWindow = 0;
-		private MembershipPasswordFormat m_PasswordFormat = MembershipPasswordFormat.Clear;
-		private int m_MinRequiredNonAlphanumericCharacters = 0;
-		private int m_MinRequiredPasswordLength = 0;
-		private string m_PasswordStrengthRegularExpression = string.Empty;
+        /// <summary>
+        /// System.Web.Security.MembershipProvider properties.
+        /// </summary>
+        #region System.Web.Security.MembershipProvider properties
+        private string m_ApplicationName = string.Empty;
+        private bool m_EnablePasswordReset = false;
+        private bool m_EnablePasswordRetrieval = false;
+        private bool m_RequiresQuestionAndAnswer = false;
+        private bool m_RequiresUniqueEmail = false;
+        private int m_MaxInvalidPasswordAttempts = 0;
+        private int m_PasswordAttemptWindow = 0;
+        private MembershipPasswordFormat m_PasswordFormat = MembershipPasswordFormat.Clear;
+        private int m_MinRequiredNonAlphanumericCharacters = 0;
+        private int m_MinRequiredPasswordLength = 0;
+        private string m_PasswordStrengthRegularExpression = string.Empty;
 
-		public override string ApplicationName
-		{
-			get { return m_ApplicationName; }
-			set { m_ApplicationName = value; }
-		}
+        public override string ApplicationName
+        {
+            get { return m_ApplicationName; }
+            set { m_ApplicationName = value; }
+        }
 
-		public override bool EnablePasswordReset
-		{
-			get { return m_EnablePasswordReset; }
-		}
+        public override bool EnablePasswordReset
+        {
+            get { return m_EnablePasswordReset; }
+        }
 
-		public override bool EnablePasswordRetrieval
-		{
-			get { return m_EnablePasswordRetrieval; }
-		}
+        public override bool EnablePasswordRetrieval
+        {
+            get { return m_EnablePasswordRetrieval; }
+        }
 
-		public override bool RequiresQuestionAndAnswer
-		{
-			get { return m_RequiresQuestionAndAnswer; }
-		}
+        public override bool RequiresQuestionAndAnswer
+        {
+            get { return m_RequiresQuestionAndAnswer; }
+        }
 
-		public override bool RequiresUniqueEmail
-		{
-			get { return m_RequiresUniqueEmail; }
-		}
+        public override bool RequiresUniqueEmail
+        {
+            get { return m_RequiresUniqueEmail; }
+        }
 
-		public override int MaxInvalidPasswordAttempts
-		{
-			get { return m_MaxInvalidPasswordAttempts; }
-		}
+        public override int MaxInvalidPasswordAttempts
+        {
+            get { return m_MaxInvalidPasswordAttempts; }
+        }
 
-		public override int PasswordAttemptWindow
-		{
-			get { return m_PasswordAttemptWindow; }
-		}
+        public override int PasswordAttemptWindow
+        {
+            get { return m_PasswordAttemptWindow; }
+        }
 
-		public override MembershipPasswordFormat PasswordFormat
-		{
-			get { return m_PasswordFormat; }
-		}
+        public override MembershipPasswordFormat PasswordFormat
+        {
+            get { return m_PasswordFormat; }
+        }
 
-		public override int MinRequiredNonAlphanumericCharacters
-		{
-			get { return m_MinRequiredNonAlphanumericCharacters; }
-		}
+        public override int MinRequiredNonAlphanumericCharacters
+        {
+            get { return m_MinRequiredNonAlphanumericCharacters; }
+        }
 
-		public override int MinRequiredPasswordLength
-		{
-			get { return m_MinRequiredPasswordLength; }
-		}
+        public override int MinRequiredPasswordLength
+        {
+            get { return m_MinRequiredPasswordLength; }
+        }
 
-		public override string PasswordStrengthRegularExpression
-		{
-			get { return m_PasswordStrengthRegularExpression; }
-		}
-		#endregion
+        public override string PasswordStrengthRegularExpression
+        {
+            get { return m_PasswordStrengthRegularExpression; }
+        }
+        #endregion
 
-		
-		/// <summary>
-		/// System.Web.Security.MembershipProvider methods.
-		/// </summary>
-		#region System.Web.Security.MembershipProvider methods
+        
+        /// <summary>
+        /// System.Web.Security.MembershipProvider methods.
+        /// </summary>
+        #region System.Web.Security.MembershipProvider methods
 
-		/// <summary>
-		/// MembershipProvider.ChangePassword
-		/// </summary>
-		public override bool ChangePassword(string username, string oldPassword, string newPassword)
-		{
-			if (!ValidateUser(username, oldPassword))
-				return false;
+        /// <summary>
+        /// MembershipProvider.ChangePassword
+        /// </summary>
+        public override bool ChangePassword(string username, string oldPassword, string newPassword)
+        {
+            if (!ValidateUser(username, oldPassword))
+                return false;
 
-			ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
+            ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
 
-			OnValidatingPassword(args);
+            OnValidatingPassword(args);
 
-			if (args.Cancel)
-			{
-				if (args.FailureInformation != null)
-					throw args.FailureInformation;
-				else
-					throw new MembershipPasswordException(Properties.Resources.ErrPasswordChangeCanceled);
-			}
+            if (args.Cancel)
+            {
+                if (args.FailureInformation != null)
+                    throw args.FailureInformation;
+                else
+                    throw new MembershipPasswordException(Properties.Resources.ErrPasswordChangeCanceled);
+            }
 
-			int rowsAffected = 0;
+            int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("UPDATE {0} SET Password = @Password, LastPasswordChangedDate = @LastPasswordChangedDate WHERE Username = @Username AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
-					dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
+                    dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						rowsAffected = dbCommand.ExecuteNonQuery();
-					}
-					catch (NpgsqlException e)
-					{
+                        rowsAffected = dbCommand.ExecuteNonQuery();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			if (rowsAffected > 0)
-				return true;
-			else
-				return false;
-		}
+            if (rowsAffected > 0)
+                return true;
+            else
+                return false;
+        }
 
-		/// <summary>
-		/// MembershipProvider.ChangePasswordQuestionAndAnswer
-		/// </summary>
-		public override bool ChangePasswordQuestionAndAnswer(string username, string password, string newPasswordQuestion, string newPasswordAnswer)
-		{
-			if (!ValidateUser(username, password))
-				return false;
+        /// <summary>
+        /// MembershipProvider.ChangePasswordQuestionAndAnswer
+        /// </summary>
+        public override bool ChangePasswordQuestionAndAnswer(string username, string password, string newPasswordQuestion, string newPasswordAnswer)
+        {
+            if (!ValidateUser(username, password))
+                return false;
 
-			int rowsAffected = 0;
+            int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"PasswordQuestion\" = @PasswordQuestion, \"PasswordAnswer\" = @PasswordAnswer WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("UPDATE {0} SET PasswordQuestion = @PasswordQuestion, PasswordAnswer = @PasswordAnswer WHERE Username = @Username AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = newPasswordQuestion;
-					dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(newPasswordAnswer);
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = newPasswordQuestion;
+                    dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(newPasswordAnswer);
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						rowsAffected = dbCommand.ExecuteNonQuery();
-					}
-					catch (NpgsqlException e)
-					{
+                        rowsAffected = dbCommand.ExecuteNonQuery();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			if (rowsAffected > 0)
-				return true;
-			else
-				return false;
-		}
+            if (rowsAffected > 0)
+                return true;
+            else
+                return false;
+        }
 
-		/// <summary>
-		/// MembershipProvider.CreateUser
-		/// </summary>
-		public override MembershipUser CreateUser(string username, string password, string email, string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey, out MembershipCreateStatus status)
-		{
-			ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, password, true);
+        /// <summary>
+        /// MembershipProvider.CreateUser
+        /// </summary>
+        public override MembershipUser CreateUser(string username, string password, string email, string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey, out MembershipCreateStatus status)
+        {
+            ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, password, true);
 
-			OnValidatingPassword(args);
+            OnValidatingPassword(args);
 
-			if (args.Cancel)
-			{
-				status = MembershipCreateStatus.InvalidPassword;
-				return null;
-			}
+            if (args.Cancel)
+            {
+                status = MembershipCreateStatus.InvalidPassword;
+                return null;
+            }
 
-			if (RequiresUniqueEmail && !string.IsNullOrEmpty(GetUserNameByEmail(email)))
-			{
-				status = MembershipCreateStatus.DuplicateEmail;
-				return null;
-			}
+            if (RequiresUniqueEmail && !string.IsNullOrEmpty(GetUserNameByEmail(email)))
+            {
+                status = MembershipCreateStatus.DuplicateEmail;
+                return null;
+            }
 
-			if (GetUser(username, false) == null)
-			{
-				DateTime createDate = DateTime.Now;
+            if (GetUser(username, false) == null)
+            {
+                DateTime createDate = DateTime.Now;
 
-				if (providerUserKey == null)
-				{
-					providerUserKey = Guid.NewGuid();
-				}
-				else
-				{
-					if (!(providerUserKey is Guid))
-					{
-						status = MembershipCreateStatus.InvalidProviderUserKey;
-						return null;
-					}
-				}
-				
-				// Create user in database
-				using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-				{
-					using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-					{
-						dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"pId\", \"Username\", \"Password\", \"Email\", \"PasswordQuestion\", \"PasswordAnswer\", \"IsApproved\", \"Comment\", \"CreationDate\", \"LastPasswordChangedDate\", \"LastActivityDate\", \"ApplicationName\", \"IsLockedOut\", \"LastLockedOutDate\", \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\") Values (@pId, @Username, @Password, @Email, @PasswordQuestion, @PasswordAnswer, @IsApproved, @Comment, @CreationDate, @LastPasswordChangedDate, @LastActivityDate, @ApplicationName, @IsLockedOut, @LastLockedOutDate, @FailedPasswordAttemptCount, @FailedPasswordAttemptWindowStart, @FailedPasswordAnswerAttemptCount, @FailedPasswordAnswerAttemptWindowStart)", m_TableName);
+                if (providerUserKey == null)
+                {
+                    providerUserKey = Guid.NewGuid();
+                }
+                else
+                {
+                    if (!(providerUserKey is Guid))
+                    {
+                        status = MembershipCreateStatus.InvalidProviderUserKey;
+                        return null;
+                    }
+                }
+                
+                // Create user in database
+                using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+                {
+                    using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                    {
+                        dbCommand.CommandText = string.Format("INSERT INTO {0} (pId, Username, Password, Email, PasswordQuestion, PasswordAnswer, IsApproved, Comment, CreationDate, LastPasswordChangedDate, LastActivityDate, ApplicationName, IsLockedOut, LastLockedOutDate, FailedPasswordAttemptCount, FailedPasswordAttemptWindowStart, FailedPasswordAnswerAttemptCount, FailedPasswordAnswerAttemptWindowStart) Values (@pId, @Username, @Password, @Email, @PasswordQuestion, @PasswordAnswer, @IsApproved, @Comment, @CreationDate, @LastPasswordChangedDate, @LastActivityDate, @ApplicationName, @IsLockedOut, @LastLockedOutDate, @FailedPasswordAttemptCount, @FailedPasswordAttemptWindowStart, @FailedPasswordAnswerAttemptCount, @FailedPasswordAnswerAttemptWindowStart)", m_TableName);
 
-						dbCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36).Value = providerUserKey;
-						dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-						dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 255).Value = EncodePassword(password);
-						dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
-						dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = passwordQuestion;
-						dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(passwordAnswer);
-						dbCommand.Parameters.Add("@IsApproved", NpgsqlDbType.Boolean).Value = isApproved;
-						dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar, 255).Value = string.Empty;
-						dbCommand.Parameters.Add("@CreationDate", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-						dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
-						dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@FailedPasswordAttemptCount", NpgsqlDbType.Integer).Value = 0;
-						dbCommand.Parameters.Add("@FailedPasswordAttemptWindowStart", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@FailedPasswordAnswerAttemptCount", NpgsqlDbType.Integer).Value = 0;
-						dbCommand.Parameters.Add("@FailedPasswordAnswerAttemptWindowStart", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36).Value = providerUserKey;
+                        dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                        dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 255).Value = EncodePassword(password);
+                        dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
+                        dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = passwordQuestion;
+                        dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(passwordAnswer);
+                        dbCommand.Parameters.Add("@IsApproved", NpgsqlDbType.Boolean).Value = isApproved;
+                        dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar, 255).Value = string.Empty;
+                        dbCommand.Parameters.Add("@CreationDate", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                        dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
+                        dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@FailedPasswordAttemptCount", NpgsqlDbType.Integer).Value = 0;
+                        dbCommand.Parameters.Add("@FailedPasswordAttemptWindowStart", NpgsqlDbType.TimestampTZ).Value = createDate;
+                        dbCommand.Parameters.Add("@FailedPasswordAnswerAttemptCount", NpgsqlDbType.Integer).Value = 0;
+                        dbCommand.Parameters.Add("@FailedPasswordAnswerAttemptWindowStart", NpgsqlDbType.TimestampTZ).Value = createDate;
 
-						try
-						{
-							dbConn.Open();
-							dbCommand.Prepare();
+                        try
+                        {
+                            dbConn.Open();
 
-							if (dbCommand.ExecuteNonQuery() > 0)
-							{
-								status = MembershipCreateStatus.Success;
-							}
-							else
-							{
-								status = MembershipCreateStatus.UserRejected;
-							}
-						}
-						catch (NpgsqlException e)
-						{
-							status = MembershipCreateStatus.ProviderError;
+                            if (dbCommand.ExecuteNonQuery() > 0)
+                            {
+                                status = MembershipCreateStatus.Success;
+                            }
+                            else
+                            {
+                                status = MembershipCreateStatus.UserRejected;
+                            }
+                        }
+                        catch (NpgsqlException e)
+                        {
+                            status = MembershipCreateStatus.ProviderError;
 							Trace.WriteLine(e.ToString());
 							throw new ProviderException(Properties.Resources.ErrOperationAborted);
-						}
-						finally
-						{
-							if (dbConn != null)
-								dbConn.Close();
-						}
+                        }
+                        finally
+                        {
+                            if (dbConn != null)
+                                dbConn.Close();
+                        }
 
-						return GetUser(username, false);
-					}
-				}
-			}
-			else
-			{
-				status = MembershipCreateStatus.DuplicateUserName;
-			}
-			return null;
-		}
+                        return GetUser(username, false);
+                    }
+                }
+            }
+            else
+            {
+                status = MembershipCreateStatus.DuplicateUserName;
+            }
+            return null;
+        }
 
-		/// <summary>
-		/// MembershipProvider.DeleteUser
-		/// </summary>
-		public override bool DeleteUser(string username, bool deleteAllRelatedData)
-		{
-			int rowsAffected = 0;
+        /// <summary>
+        /// MembershipProvider.DeleteUser
+        /// </summary>
+        public override bool DeleteUser(string username, bool deleteAllRelatedData)
+        {
+            int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("DELETE FROM \"{0}\" WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("DELETE FROM {0} WHERE Username = @Username AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						rowsAffected = dbCommand.ExecuteNonQuery();
+                        rowsAffected = dbCommand.ExecuteNonQuery();
 
-						if (deleteAllRelatedData)
-						{
-							// Process commands to delete all data for the user in the database.
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                        if (deleteAllRelatedData)
+                        {
+                            // Process commands to delete all data for the user in the database.
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			if (rowsAffected > 0)
-				return true;
-			else
-				return false;
-		}
+            if (rowsAffected > 0)
+                return true;
+            else
+                return false;
+        }
 
-		/// <summary>
-		/// MembershipProvider.FindUsersByEmail
-		/// </summary>
-		public override MembershipUserCollection FindUsersByEmail(string emailToMatch, int pageIndex, int pageSize, out int totalRecords)
-		{
-			totalRecords = 0;
-			MembershipUserCollection users = new MembershipUserCollection();
+        /// <summary>
+        /// MembershipProvider.FindUsersByEmail
+        /// </summary>
+        public override MembershipUserCollection FindUsersByEmail(string emailToMatch, int pageIndex, int pageSize, out int totalRecords)
+        {
+            totalRecords = 0;
+            MembershipUserCollection users = new MembershipUserCollection();
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				// Get user count
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT Count(*) FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                // Get user count
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Count(*) FROM {0} WHERE Email ILIKE @Email AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+                        Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
 
-						if (totalRecords <= 0) { return users; }
-					}
-					catch (NpgsqlException e)
-					{
+                        if (totalRecords <= 0) { return users; }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
 
-				// Fetch user from database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+                // Fetch user from database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT pId, Username, Email, PasswordQuestion, Comment, IsApproved, IsLockedOut, CreationDate, LastLoginDate, LastActivityDate, LastPasswordChangedDate, LastLockedOutDate FROM {0} WHERE Email ILIKE @Email AND ApplicationName = @ApplicationName ORDER BY Username ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
 
-					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
-					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
+                    dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
+                    dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								MembershipUser u = GetUserFromReader(reader);
-								users.Add(u);
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                MembershipUser u = GetUserFromReader(reader);
+                                users.Add(u);
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return users;
-		}
+            return users;
+        }
 
-		/// <summary>
-		/// MembershipProvider.FindUsersByName
-		/// </summary>
-		public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
-		{
-			totalRecords = 0;
-			MembershipUserCollection users = new MembershipUserCollection();
+        /// <summary>
+        /// MembershipProvider.FindUsersByName
+        /// </summary>
+        public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
+        {
+            totalRecords = 0;
+            MembershipUserCollection users = new MembershipUserCollection();
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				// Get user count
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT Count(*) FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                // Get user count
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Count(*) FROM {0} WHERE Username ILIKE @Username AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+                        Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
 
-						if (totalRecords <= 0) { return users; }
-					}
-					catch (NpgsqlException e)
-					{
+                        if (totalRecords <= 0) { return users; }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
 
-				// Fetch user from database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+                // Fetch user from database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT pId, Username, Email, PasswordQuestion, Comment, IsApproved, IsLockedOut, CreationDate, LastLoginDate, LastActivityDate, LastPasswordChangedDate, LastLockedOutDate FROM {0} WHERE Username ILIKE @Username AND ApplicationName = @ApplicationName ORDER BY Username ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
-					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
+                    dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								MembershipUser u = GetUserFromReader(reader);
-								users.Add(u);
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                MembershipUser u = GetUserFromReader(reader);
+                                users.Add(u);
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return users;
-		}
+            return users;
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetAllUsers
-		/// </summary>
-		public override MembershipUserCollection GetAllUsers(int pageIndex, int pageSize, out int totalRecords)
-		{
-			totalRecords = 0;
-			MembershipUserCollection users = new MembershipUserCollection();
+        /// <summary>
+        /// MembershipProvider.GetAllUsers
+        /// </summary>
+        public override MembershipUserCollection GetAllUsers(int pageIndex, int pageSize, out int totalRecords)
+        {
+            totalRecords = 0;
+            MembershipUserCollection users = new MembershipUserCollection();
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				// Get user count
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT Count(*) FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                // Get user count
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Count(*) FROM {0} WHERE ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+                        Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
 
-						if (totalRecords <= 0) { return users; }
-					}
-					catch (NpgsqlException e)
-					{
-						//TODO: logging
-						throw e;
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
+                        if (totalRecords <= 0) { return users; }
+                    }
+                    catch (NpgsqlException e)
+                    {
+                        //TODO: logging
+                        throw e;
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
 
-				// Fetch user from database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
-					
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
-					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
+                // Fetch user from database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT pId, Username, Email, PasswordQuestion, Comment, IsApproved, IsLockedOut, CreationDate, LastLoginDate, LastActivityDate, LastPasswordChangedDate, LastLockedOutDate FROM {0} WHERE ApplicationName = @ApplicationName ORDER BY Username ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+                    
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
+                    dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								MembershipUser u = GetUserFromReader(reader);
-								users.Add(u);
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                MembershipUser u = GetUserFromReader(reader);
+                                users.Add(u);
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return users;
-		}
+            return users;
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetNumberOfUsersOnline
-		/// </summary>
-		public override int GetNumberOfUsersOnline()
-		{
-			int numOnline = 0;
+        /// <summary>
+        /// MembershipProvider.GetNumberOfUsersOnline
+        /// </summary>
+        public override int GetNumberOfUsersOnline()
+        {
+            int numOnline = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					TimeSpan onlineSpan = new TimeSpan(0, System.Web.Security.Membership.UserIsOnlineTimeWindow, 0);
-					DateTime compareTime = DateTime.Now.Subtract(onlineSpan);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    TimeSpan onlineSpan = new TimeSpan(0, System.Web.Security.Membership.UserIsOnlineTimeWindow, 0);
+                    DateTime compareTime = DateTime.Now.Subtract(onlineSpan);
 
-					dbCommand.CommandText = string.Format("SELECT Count(*) FROM \"{0}\" WHERE \"LastActivityDate\" > @CompareTime AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+                    dbCommand.CommandText = string.Format("SELECT Count(*) FROM {0} WHERE LastActivityDate > @CompareTime AND  ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@CompareTime", NpgsqlDbType.TimestampTZ, 255).Value = compareTime;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@CompareTime", NpgsqlDbType.TimestampTZ, 255).Value = compareTime;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						numOnline = (int)dbCommand.ExecuteScalar();
-					}
-					catch (NpgsqlException e)
-					{
+                        numOnline = (int)dbCommand.ExecuteScalar();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return numOnline;
-		}
+            return numOnline;
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetPassword
-		/// </summary>
-		public override string GetPassword(string username, string answer)
-		{
-			if (!EnablePasswordRetrieval)
-			{
-				throw new ProviderException(Properties.Resources.ErrPasswordRetrievalNotEnabled);
-			}
+        /// <summary>
+        /// MembershipProvider.GetPassword
+        /// </summary>
+        public override string GetPassword(string username, string answer)
+        {
+            if (!EnablePasswordRetrieval)
+            {
+                throw new ProviderException(Properties.Resources.ErrPasswordRetrievalNotEnabled);
+            }
 
-			if (PasswordFormat == MembershipPasswordFormat.Hashed)
-			{
-				throw new ProviderException(Properties.Resources.ErrCantRetrieveHashedPw);
-			}
+            if (PasswordFormat == MembershipPasswordFormat.Hashed)
+            {
+                throw new ProviderException(Properties.Resources.ErrCantRetrieveHashedPw);
+            }
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Password\", \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Password, PasswordAnswer, IsLockedOut FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
 
-								string password = reader.GetString(0);
-								string passwordAnswer = reader.GetString(1);
-								bool isLockedOut = reader.GetBoolean(2);
+                                string password = reader.GetString(0);
+                                string passwordAnswer = reader.GetString(1);
+                                bool isLockedOut = reader.GetBoolean(2);
 
-								reader.Close();
+                                reader.Close();
 
-								if (isLockedOut)
-									throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
+                                if (isLockedOut)
+                                    throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
 
-								if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
-								{
-									UpdateFailureCount(username, FailureType.PasswordAnswer);
+                                if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
+                                {
+                                    UpdateFailureCount(username, FailureType.PasswordAnswer);
 
-									throw new MembershipPasswordException(Properties.Resources.ErrIncorrectPasswordAnswer);
-								}
+                                    throw new MembershipPasswordException(Properties.Resources.ErrIncorrectPasswordAnswer);
+                                }
 
-								if (m_PasswordFormat == MembershipPasswordFormat.Encrypted)
-								{
-									password = UnEncodePassword(password);
-								}
+                                if (m_PasswordFormat == MembershipPasswordFormat.Encrypted)
+                                {
+                                    password = UnEncodePassword(password);
+                                }
 
-								return password;
-							}
-							else
-							{
-								throw new MembershipPasswordException(Properties.Resources.ErrUserNotFound);
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                                return password;
+                            }
+                            else
+                            {
+                                throw new MembershipPasswordException(Properties.Resources.ErrUserNotFound);
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetUser
-		/// </summary>
-		public override MembershipUser GetUser(string username, bool userIsOnline)
-		{
-			MembershipUser u = null;
+        /// <summary>
+        /// MembershipProvider.GetUser
+        /// </summary>
+        public override MembershipUser GetUser(string username, bool userIsOnline)
+        {
+            MembershipUser u = null;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT pId, Username, Email, PasswordQuestion, Comment, IsApproved, IsLockedOut, CreationDate, LastLoginDate, LastActivityDate, LastPasswordChangedDate, LastLockedOutDate FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
-								u = GetUserFromReader(reader);
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
+                                u = GetUserFromReader(reader);
 
-								if (userIsOnline)
-								{
-									// Update user online status
-									using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
-									{
-										dbUpdateCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", m_TableName);
+                                if (userIsOnline)
+                                {
+                                    // Update user online status
+                                    using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
+                                    {
+                                        dbUpdateCommand.CommandText = string.Format("UPDATE {0} SET LastActivityDate = @LastActivityDate WHERE pId = @pId", m_TableName);
 
-										dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-										dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
+                                        dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                                        dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
 
-										dbUpdateCommand.Prepare();
 
-										dbUpdateCommand.ExecuteNonQuery();
-									}
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+
+                                        dbUpdateCommand.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return u;
-		}
+            return u;
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetUser
-		/// </summary>
-		public override MembershipUser GetUser(object providerUserKey, bool userIsOnline)
-		{
-			MembershipUser u = null;
+        /// <summary>
+        /// MembershipProvider.GetUser
+        /// </summary>
+        public override MembershipUser GetUser(object providerUserKey, bool userIsOnline)
+        {
+            MembershipUser u = null;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"pId\" = @pId", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT pId, Username, Email, PasswordQuestion, Comment, IsApproved, IsLockedOut, CreationDate, LastLoginDate, LastActivityDate, LastPasswordChangedDate, LastLockedOutDate FROM {0} WHERE pId = @pId", m_TableName);
 
-					dbCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = providerUserKey;
+                    dbCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = providerUserKey;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
-								u = GetUserFromReader(reader);
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
+                                u = GetUserFromReader(reader);
 
-								if (userIsOnline)
-								{
-									// Update user online status
-									using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
-									{
-										dbUpdateCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", m_TableName);
+                                if (userIsOnline)
+                                {
+                                    // Update user online status
+                                    using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
+                                    {
+                                        dbUpdateCommand.CommandText = string.Format("UPDATE {0} SET LastActivityDate = @LastActivityDate WHERE pId = @pId", m_TableName);
 
-										dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-										dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
+                                        dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                                        dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
 
-										dbUpdateCommand.Prepare();
 
-										dbUpdateCommand.ExecuteNonQuery();
-									}
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                                        dbUpdateCommand.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return u;
-		}
+            return u;
+        }
 
-		/// <summary>
-		/// MembershipProvider.GetUserNameByEmail
-		/// </summary>
-		public override string GetUserNameByEmail(string email)
-		{
-			string username = string.Empty;
+        /// <summary>
+        /// MembershipProvider.GetUserNameByEmail
+        /// </summary>
+        public override string GetUserNameByEmail(string email)
+        {
+            string username = string.Empty;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Username\" FROM \"{0}\" WHERE \"Email\" = @Email AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Username FROM {0} WHERE Email = @Email AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						username = (dbCommand.ExecuteScalar() as string) ?? string.Empty;
-					}
-					catch (NpgsqlException e)
-					{
+                        username = (dbCommand.ExecuteScalar() as string) ?? string.Empty;
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return username;
-		}
+            return username;
+        }
 
-		/// <summary>
-		/// MembershipProvider.ResetPassword
-		/// </summary>
-		public override string ResetPassword(string username, string answer)
-		{
-			if (!m_EnablePasswordReset)
-			{
-				throw new NotSupportedException(Properties.Resources.ErrPasswordResetNotEnabled);
-			}
+        /// <summary>
+        /// MembershipProvider.ResetPassword
+        /// </summary>
+        public override string ResetPassword(string username, string answer)
+        {
+            if (!m_EnablePasswordReset)
+            {
+                throw new NotSupportedException(Properties.Resources.ErrPasswordResetNotEnabled);
+            }
 
-			if (string.IsNullOrEmpty(answer) && m_RequiresQuestionAndAnswer)
-			{
-				UpdateFailureCount(username, FailureType.PasswordAnswer);
+            if (string.IsNullOrEmpty(answer) && m_RequiresQuestionAndAnswer)
+            {
+                UpdateFailureCount(username, FailureType.PasswordAnswer);
 
-				throw new ProviderException(Properties.Resources.ErrPasswordAnswerRequired);
-			}
+                throw new ProviderException(Properties.Resources.ErrPasswordAnswerRequired);
+            }
 
-			string newPassword = Membership.GeneratePassword(m_NewPasswordLength, m_MinRequiredNonAlphanumericCharacters);
+            string newPassword = Membership.GeneratePassword(m_NewPasswordLength, m_MinRequiredNonAlphanumericCharacters);
 
 
-			ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
+            ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
 
-			OnValidatingPassword(args);
+            OnValidatingPassword(args);
 
-			if (args.Cancel)
-			{
-				if (args.FailureInformation != null)
-					throw args.FailureInformation;
-				else
-					throw new MembershipPasswordException(Properties.Resources.ErrPasswordResetCanceled);
-			}
+            if (args.Cancel)
+            {
+                if (args.FailureInformation != null)
+                    throw args.FailureInformation;
+                else
+                    throw new MembershipPasswordException(Properties.Resources.ErrPasswordResetCanceled);
+            }
 
-			int rowsAffected = 0;
+            int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT PasswordAnswer, IsLockedOut FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						string passwordAnswer = string.Empty;
+                    try
+                    {
+                        string passwordAnswer = string.Empty;
 
-						dbConn.Open();
-						dbCommand.Prepare();
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
 
-								passwordAnswer = reader.GetString(0);
-								bool isLockedOut = reader.GetBoolean(1);
+                                passwordAnswer = reader.GetString(0);
+                                bool isLockedOut = reader.GetBoolean(1);
 
-								reader.Close();
+                                reader.Close();
 
-								if (isLockedOut)
-									throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
+                                if (isLockedOut)
+                                    throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
 
-								if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
-								{
-									UpdateFailureCount(username, FailureType.PasswordAnswer);
+                                if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
+                                {
+                                    UpdateFailureCount(username, FailureType.PasswordAnswer);
 
-									throw new MembershipPasswordException(Properties.Resources.ErrIncorrectPasswordAnswer);
-								}
-							}
-							else
-							{
-								throw new MembershipPasswordException(Properties.Resources.ErrUserNotFound);
-							}
-						}
+                                    throw new MembershipPasswordException(Properties.Resources.ErrIncorrectPasswordAnswer);
+                                }
+                            }
+                            else
+                            {
+                                throw new MembershipPasswordException(Properties.Resources.ErrUserNotFound);
+                            }
+                        }
 
-						// Reset Password
-						using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
-						{
-							dbUpdateCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", m_TableName);
+                        // Reset Password
+                        using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
+                        {
+                            dbUpdateCommand.CommandText = string.Format("UPDATE {0} SET Password = @Password, LastPasswordChangedDate = @LastPasswordChangedDate WHERE Username = @Username AND ApplicationName = @ApplicationName AND IsLockedOut = @IsLockedOut", m_TableName);
 
-							dbUpdateCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
-							dbUpdateCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-							dbUpdateCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-							dbUpdateCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-							dbUpdateCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
+                            dbUpdateCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
+                            dbUpdateCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                            dbUpdateCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                            dbUpdateCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                            dbUpdateCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 
-							dbUpdateCommand.Prepare();
 
-							rowsAffected = dbUpdateCommand.ExecuteNonQuery();
-						}
+                            rowsAffected = dbUpdateCommand.ExecuteNonQuery();
+                        }
 
-					}
-					catch (NpgsqlException e)
-					{
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			if (rowsAffected > 0)
-				return newPassword;
-			
-			else
-				throw new MembershipPasswordException(Properties.Resources.ErrPasswordResetAborted);
-		}
+            if (rowsAffected > 0)
+                return newPassword;
+            
+            else
+                throw new MembershipPasswordException(Properties.Resources.ErrPasswordResetAborted);
+        }
 
-		/// <summary>
-		/// MembershipProvider.UnlockUser
-		/// </summary>
-		public override bool UnlockUser(string userName)
-		{
-			int rowsAffected = 0;
+        /// <summary>
+        /// MembershipProvider.UnlockUser
+        /// </summary>
+        public override bool UnlockUser(string userName)
+        {
+            int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("UPDATE  \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("UPDATE  {0} SET IsLockedOut = @IsLockedOut, LastLockedOutDate = @LastLockedOutDate WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
-					dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
+                    dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						rowsAffected = dbCommand.ExecuteNonQuery();
-					}
-					catch (NpgsqlException e)
-					{
+                        rowsAffected = dbCommand.ExecuteNonQuery();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			if (rowsAffected > 0)
-				return true;
+            if (rowsAffected > 0)
+                return true;
 
-			else
-				return false;
-		}
+            else
+                return false;
+        }
 
-		/// <summary>
-		/// MembershipProvider.UpdateUser
-		/// </summary>
-		public override void UpdateUser(MembershipUser user)
-		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("UPDATE  \"{0}\" SET \"Email\" = @Email, \"Comment\" = @Comment, \"IsApproved\" = @IsApproved WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+        /// <summary>
+        /// MembershipProvider.UpdateUser
+        /// </summary>
+        public override void UpdateUser(MembershipUser user)
+        {
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("UPDATE  {0} SET Email = @Email, Comment = @Comment, IsApproved = @IsApproved WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = user.Email;
-					dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar,255).Value = user.Comment;
-					dbCommand.Parameters.Add("@IsApproved", NpgsqlDbType.Boolean).Value = user.IsApproved;
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = user.UserName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = user.Email;
+                    dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar,255).Value = user.Comment;
+                    dbCommand.Parameters.Add("@IsApproved", NpgsqlDbType.Boolean).Value = user.IsApproved;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = user.UserName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						dbCommand.ExecuteNonQuery();
-					}
-					catch (NpgsqlException e)
-					{
+                        dbCommand.ExecuteNonQuery();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+        }
 
-		/// <summary>
-		/// MembershipProvider.ValidateUser
-		/// </summary>
-		public override bool ValidateUser(string username, string password)
-		{
-			string dbPassword = string.Empty;
-			bool dbIsApproved = false;
+        /// <summary>
+        /// MembershipProvider.ValidateUser
+        /// </summary>
+        public override bool ValidateUser(string username, string password)
+        {
+            string dbPassword = string.Empty;
+            bool dbIsApproved = false;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				// Fetch user data from database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Password\", \"IsApproved\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                // Fetch user data from database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Password, IsApproved FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName AND IsLockedOut = @IsLockedOut", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-					dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
-								dbPassword = reader.GetString(0);
-								dbIsApproved = reader.GetBoolean(1);
-							}
-							else
-							{
-								return false;
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
+                                dbPassword = reader.GetString(0);
+                                dbIsApproved = reader.GetBoolean(1);
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
 
-				if (CheckPassword(password, dbPassword))
-				{
-					if (dbIsApproved)
-					{
-						// Update last login date
-						using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-						{
-							dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastLoginDate\" = @LastLoginDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+                if (CheckPassword(password, dbPassword))
+                {
+                    if (dbIsApproved)
+                    {
+                        // Update last login date
+                        using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                        {
+                            dbCommand.CommandText = string.Format("UPDATE {0} SET LastLoginDate = @LastLoginDate WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-							dbCommand.Parameters.Add("@LastLoginDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-							dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                            dbCommand.Parameters.Add("@LastLoginDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                            dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                            dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-							try
-							{
-								dbConn.Open();
-								dbCommand.Prepare();
+                            try
+                            {
+                                dbConn.Open();
 
-								dbCommand.ExecuteNonQuery();
+                                dbCommand.ExecuteNonQuery();
 
-								return true;
-							}
-							catch (NpgsqlException e)
-							{
+                                return true;
+                            }
+                            catch (NpgsqlException e)
+                            {
 								Trace.WriteLine(e.ToString());
 								throw new ProviderException(Properties.Resources.ErrOperationAborted);
-							}
-							finally
-							{
-								if (dbConn != null)
-									dbConn.Close();
-							}
-						}
-					}
-				}
+                            }
+                            finally
+                            {
+                                if (dbConn != null)
+                                    dbConn.Close();
+                            }
+                        }
+                    }
+                }
 
-				return false;
-			}
-		}
-		#endregion
+                return false;
+            }
+        }
+        #endregion
 
-		#region private methods
-		/// <summary>
-		/// A helper function to retrieve config values from the configuration file.
-		/// </summary>
-		/// <param name="configValue"></param>
-		/// <param name="defaultValue"></param>
-		/// <returns></returns>
-		private string GetConfigValue(string configValue, string defaultValue)
-		{
-			if (string.IsNullOrEmpty(configValue))
-				return defaultValue;
+        #region private methods
+        /// <summary>
+        /// A helper function to retrieve config values from the configuration file.
+        /// </summary>
+        /// <param name="configValue"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        private string GetConfigValue(string configValue, string defaultValue)
+        {
+            if (string.IsNullOrEmpty(configValue))
+                return defaultValue;
 
-			return configValue;
-		}
+            return configValue;
+        }
 
-		/// <summary>
-		/// A helper function that takes the current row from the NpgsqlDataReader
-		/// and hydrates a MembershipUser from the values. Called by the 
-		/// MembershipUser.GetUser implementation.
-		/// </summary>
-		/// <param name="reader">NpgsqlDataReader object</param>
-		/// <returns>MembershipUser object</returns>
-		private MembershipUser GetUserFromReader(NpgsqlDataReader reader)
-		{
-			object providerUserKey = reader.GetValue(0);
-			string username = reader.GetString(1);
-			string email = reader.GetString(2);
+        /// <summary>
+        /// A helper function that takes the current row from the NpgsqlDataReader
+        /// and hydrates a MembershipUser from the values. Called by the 
+        /// MembershipUser.GetUser implementation.
+        /// </summary>
+        /// <param name="reader">NpgsqlDataReader object</param>
+        /// <returns>MembershipUser object</returns>
+        private MembershipUser GetUserFromReader(NpgsqlDataReader reader)
+        {
+            object providerUserKey = reader.GetValue(0);
+            string username = reader.GetString(1);
+            string email = reader.GetString(2);
 
-			string passwordQuestion = string.Empty;
-			if (!reader.IsDBNull(3))
-				passwordQuestion = reader.GetString(3);
-			
-			string comment = string.Empty;
-			if (!reader.IsDBNull(4))
-				comment = reader.GetString(4);
+            string passwordQuestion = string.Empty;
+            if (!reader.IsDBNull(3))
+                passwordQuestion = reader.GetString(3);
+            
+            string comment = string.Empty;
+            if (!reader.IsDBNull(4))
+                comment = reader.GetString(4);
 
-			bool isApproved = reader.GetBoolean(5);
-			bool isLockedOut = reader.GetBoolean(6);
-			DateTime creationDate = reader.GetDateTime(7);
+            bool isApproved = reader.GetBoolean(5);
+            bool isLockedOut = reader.GetBoolean(6);
+            DateTime creationDate = reader.GetDateTime(7);
 
-			DateTime lastLoginDate = new DateTime();
-			if (!reader.IsDBNull(8))
-				lastLoginDate = reader.GetDateTime(8);
+            DateTime lastLoginDate = new DateTime();
+            if (!reader.IsDBNull(8))
+                lastLoginDate = reader.GetDateTime(8);
 
-			DateTime lastActivityDate = reader.GetDateTime(9);
-			DateTime lastPasswordChangedDate = reader.GetDateTime(10);
+            DateTime lastActivityDate = reader.GetDateTime(9);
+            DateTime lastPasswordChangedDate = reader.GetDateTime(10);
 
-			DateTime lastLockedOutDate = new DateTime();
-			if (!reader.IsDBNull(11))
-				lastLockedOutDate = reader.GetDateTime(11);
+            DateTime lastLockedOutDate = new DateTime();
+            if (!reader.IsDBNull(11))
+                lastLockedOutDate = reader.GetDateTime(11);
 
-			MembershipUser u = new MembershipUser(this.Name,
-												  username,
-												  providerUserKey,
-												  email,
-												  passwordQuestion,
-												  comment,
-												  isApproved,
-												  isLockedOut,
-												  creationDate,
-												  lastLoginDate,
-												  lastActivityDate,
-												  lastPasswordChangedDate,
-												  lastLockedOutDate);
-			
-			return u;
-		}
+            MembershipUser u = new MembershipUser(this.Name,
+                                                  username,
+                                                  providerUserKey,
+                                                  email,
+                                                  passwordQuestion,
+                                                  comment,
+                                                  isApproved,
+                                                  isLockedOut,
+                                                  creationDate,
+                                                  lastLoginDate,
+                                                  lastActivityDate,
+                                                  lastPasswordChangedDate,
+                                                  lastLockedOutDate);
+            
+            return u;
+        }
 
-		/// <summary>
-		/// Compares password values based on the MembershipPasswordFormat.
-		/// </summary>
-		/// <param name="password"></param>
-		/// <param name="dbpassword"></param>
-		/// <returns></returns>
-		private bool CheckPassword(string password, string dbpassword)
-		{
-			string pass1 = password;
-			string pass2 = dbpassword;
+        /// <summary>
+        /// Compares password values based on the MembershipPasswordFormat.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <param name="dbpassword"></param>
+        /// <returns></returns>
+        private bool CheckPassword(string password, string dbpassword)
+        {
+            string pass1 = password;
+            string pass2 = dbpassword;
 
-			switch (PasswordFormat)
-			{
-				case MembershipPasswordFormat.Encrypted:
-					pass2 = UnEncodePassword(dbpassword);
-					break;
+            switch (PasswordFormat)
+            {
+                case MembershipPasswordFormat.Encrypted:
+                    pass2 = UnEncodePassword(dbpassword);
+                    break;
 
-				case MembershipPasswordFormat.Hashed:
-					pass1 = EncodePassword(password);
-					break;
+                case MembershipPasswordFormat.Hashed:
+                    pass1 = EncodePassword(password);
+                    break;
 
-				default:
-					break;
-			}
+                default:
+                    break;
+            }
 
-			if (pass1.Equals(pass2))
-				return true;
-			else
-				return false;
-		}
+            if (pass1.Equals(pass2))
+                return true;
+            else
+                return false;
+        }
 
-		/// <summary>
-		/// Encrypts, Hashes, or leaves the password clear based on the PasswordFormat.
-		/// </summary>
-		/// <param name="password"></param>
-		/// <returns></returns>
-		private string EncodePassword(string password)
-		{
-			string encodedPassword = password;
+        /// <summary>
+        /// Encrypts, Hashes, or leaves the password clear based on the PasswordFormat.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        private string EncodePassword(string password)
+        {
+            string encodedPassword = password;
 
-			switch (PasswordFormat)
-			{
-				case MembershipPasswordFormat.Clear:
-					break;
+            switch (PasswordFormat)
+            {
+                case MembershipPasswordFormat.Clear:
+                    break;
 
-				case MembershipPasswordFormat.Encrypted:
-					encodedPassword = Convert.ToBase64String(EncryptPassword(Encoding.Unicode.GetBytes(password)));
-					break;
+                case MembershipPasswordFormat.Encrypted:
+                    encodedPassword = Convert.ToBase64String(EncryptPassword(Encoding.Unicode.GetBytes(password)));
+                    break;
 
-				case MembershipPasswordFormat.Hashed:
-					HMACSHA1 hash = new HMACSHA1();
-					hash.Key = HexToByte(m_MachineKey.ValidationKey);
-					encodedPassword = Convert.ToBase64String(hash.ComputeHash(Encoding.Unicode.GetBytes(password)));
-					break;
+                case MembershipPasswordFormat.Hashed:
+                    HMACSHA1 hash = new HMACSHA1();
+                    hash.Key = HexToByte(m_MachineKey.ValidationKey);
+                    encodedPassword = Convert.ToBase64String(hash.ComputeHash(Encoding.Unicode.GetBytes(password)));
+                    break;
 
-				default:
-					throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
-			}
+                default:
+                    throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
+            }
 
-			return encodedPassword;
-		}
+            return encodedPassword;
+        }
 
-		/// <summary>
-		/// Decrypts or leaves the password clear based on the PasswordFormat.
-		/// </summary>
-		/// <param name="encodedPassword"></param>
-		/// <returns></returns>
-		private string UnEncodePassword(string encodedPassword)
-		{
-			string password = encodedPassword;
+        /// <summary>
+        /// Decrypts or leaves the password clear based on the PasswordFormat.
+        /// </summary>
+        /// <param name="encodedPassword"></param>
+        /// <returns></returns>
+        private string UnEncodePassword(string encodedPassword)
+        {
+            string password = encodedPassword;
 
-			switch (PasswordFormat)
-			{
-				case MembershipPasswordFormat.Clear:
-					break;
+            switch (PasswordFormat)
+            {
+                case MembershipPasswordFormat.Clear:
+                    break;
 
-				case MembershipPasswordFormat.Encrypted:
-					password = Encoding.Unicode.GetString(DecryptPassword(Convert.FromBase64String(password)));
-					break;
+                case MembershipPasswordFormat.Encrypted:
+                    password = Encoding.Unicode.GetString(DecryptPassword(Convert.FromBase64String(password)));
+                    break;
 
-				case MembershipPasswordFormat.Hashed:
-					throw new ProviderException(Properties.Resources.ErrCantDecodeHashedPw);
+                case MembershipPasswordFormat.Hashed:
+                    throw new ProviderException(Properties.Resources.ErrCantDecodeHashedPw);
 
-				default:
-					throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
-			}
+                default:
+                    throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
+            }
 
-			return password;
-		}
+            return password;
+        }
 
-		/// <summary>
-		/// Converts a hexadecimal string to a byte array. Used to convert encryption
-		/// key values from the configuration.
-		/// </summary>
-		/// <param name="hexString"></param>
-		/// <returns></returns>
-		private byte[] HexToByte(string hexString)
-		{
-			byte[] returnBytes = new byte[hexString.Length / 2];
-			for (int i = 0; i < returnBytes.Length; i++)
-				returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+        /// <summary>
+        /// Converts a hexadecimal string to a byte array. Used to convert encryption
+        /// key values from the configuration.
+        /// </summary>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
+        private byte[] HexToByte(string hexString)
+        {
+            byte[] returnBytes = new byte[hexString.Length / 2];
+            for (int i = 0; i < returnBytes.Length; i++)
+                returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
 
-			return returnBytes;
-		}
+            return returnBytes;
+        }
 
-		/// <summary>
-		/// A helper method that performs the checks and updates associated with
-		/// password failure tracking.
-		/// </summary>
-		/// <param name="username"></param>
-		/// <param name="failType"></param>
-		private void UpdateFailureCount(string username, FailureType failType)
-		{
-			DateTime windowStart = new DateTime();
-			int failureCount = 0;
+        /// <summary>
+        /// A helper method that performs the checks and updates associated with
+        /// password failure tracking.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="failType"></param>
+        private void UpdateFailureCount(string username, FailureType failType)
+        {
+            DateTime windowStart = new DateTime();
+            int failureCount = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				// Fetch user data from database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                // Fetch user data from database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT FailedPasswordAttemptCount, FailedPasswordAttemptWindowStart, FailedPasswordAnswerAttemptCount, FailedPasswordAnswerAttemptWindowStart FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    try
+                    {
+                        dbConn.Open();
 
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								reader.Read();
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                reader.Read();
 
-								if (failType.Equals(FailureType.Password))
-								{
-									failureCount = reader.GetInt32(0);
-									windowStart = reader.GetDateTime(1);
-								}
-								else if (failType.Equals(FailureType.PasswordAnswer))
-								{
-									failureCount = reader.GetInt32(2);
-									windowStart = reader.GetDateTime(3);
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                                if (failType.Equals(FailureType.Password))
+                                {
+                                    failureCount = reader.GetInt32(0);
+                                    windowStart = reader.GetDateTime(1);
+                                }
+                                else if (failType.Equals(FailureType.PasswordAnswer))
+                                {
+                                    failureCount = reader.GetInt32(2);
+                                    windowStart = reader.GetDateTime(3);
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
 
-				// Calculate failture count and update database
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					DateTime windowEnd = windowStart.AddMinutes(m_PasswordAttemptWindow);
+                // Calculate failture count and update database
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    DateTime windowEnd = windowStart.AddMinutes(m_PasswordAttemptWindow);
 
 					try
 					{
@@ -1514,11 +1491,11 @@ namespace NauckIT.PostgreSQLProvider
 
 							if (failType.Equals(FailureType.Password))
 							{
-								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count, \"FailedPasswordAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format("UPDATE {0} SET FailedPasswordAttemptCount = @Count, FailedPasswordAttemptWindowStart = @WindowStart WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 							}
 							else if (failType.Equals(FailureType.PasswordAnswer))
 							{
-								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count, \"FailedPasswordAnswerAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format("UPDATE {0} SET FailedPasswordAnswerAttemptCount = @Count, FailedPasswordAnswerAttemptWindowStart = @WindowStart WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 							}
 
 							dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = 1;
@@ -1537,7 +1514,7 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								// Password attempts have exceeded the failure threshold. Lock out
 								// the user.
-								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format("UPDATE {0} SET IsLockedOut = @IsLockedOut, LastLockedOutDate = @LastLockedOutDate WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 
 								dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = true;
 								dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -1553,11 +1530,11 @@ namespace NauckIT.PostgreSQLProvider
 								// the failure counts. Leave the window the same.
 								if (failType.Equals(FailureType.Password))
 								{
-									dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+									dbCommand.CommandText = string.Format("UPDATE {0} SET FailedPasswordAttemptCount = @Count WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 								}
 								else if (failType.Equals(FailureType.PasswordAnswer))
 								{
-									dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+									dbCommand.CommandText = string.Format("UPDATE {0} SET FailedPasswordAnswerAttemptCount = @Count WHERE Username = @Username AND ApplicationName = @ApplicationName", m_TableName);
 								}
 
 								dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = failureCount;
@@ -1574,20 +1551,20 @@ namespace NauckIT.PostgreSQLProvider
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+        }
 
-		private enum FailureType
-		{
-			Password,
-			PasswordAnswer
-		}
-		#endregion
-	}
+        private enum FailureType
+        {
+            Password,
+            PasswordAnswer
+        }
+        #endregion
+    }
 }

@@ -1,0 +1,41 @@
+Last updated: May 22, 2007
+
+Bugs in the current implementation
+----------------------------------
+
+1. command.Prepare() breaks Npgsql
+  Issuing the above call on a command will cause Npgsql to abort the transaction
+  with the following message in the PostgreSQL log:
+  
+  2007-05-22 11:35:14 CEST STATEMENT:  SELECT COUNT(*) FROM "Roles" WHERE "Rolename" = $1::varchar AND "ApplicationName" = $2::varchar
+  2007-05-22 11:35:14 CEST ERROR:  prepared statement "npgsqlplan1" does not exist
+  2007-05-22 11:35:14 CEST STATEMENT:  deallocate "npgsqlplan1";
+
+2. PgProfileProvider.UpdateActivityDates fails to work
+
+  In the current code the above method is disabled, because it triggers the
+  following error in PostgreSQL:
+  
+  
+  2007-05-23 10:22:38 CEST ERROR:  canceling statement due to user request
+  2007-05-23 10:22:38 CEST STATEMENT:  UPDATE Profiles SET LastActivityDate = '2007-05-23 10:22:18.604288', LastUpdatedDate = '2007-05-23 10:22:18.604303' WHERE Username = 'test' AND ApplicationName = '/' AND IsAnonymous = FALSE
+
+3. Transactions in the 'using' statements
+
+  Code similar to:
+
+  NpgsqlTransaction dbTrans = null;
+  using (dbTrans = dbConn.BeginTransaction()) {
+       foreach (string username in userNames) {
+          foreach (string rolename in roleNames) {
+             // some code here
+          }
+       }
+       dbTrans.Commit();
+  }
+
+  will cause Npgsql2 to throw an exception about no transaction being in progress when
+  the transaction's Dispose method is called. The method unconditionally calls Rollback()
+  on the transaction which throws the mentioned exception.
+
+  

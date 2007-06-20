@@ -1,5 +1,5 @@
 //
-// $Id$
+// PgRoleProvider.cs
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -20,10 +20,10 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-// Copyright © 2006, 2007 Nauck IT KG		http://www.nauck-it.de
+// Copyright © 2006, 2007 Nauck IT KG
 //
 // Author:
-//	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//	Daniel Nauck		(daniel.nauck(at)rootbash(dot)com)
 
 using System;
 using System.Collections.Generic;
@@ -39,555 +39,229 @@ using NpgsqlTypes;
 
 namespace NauckIT.PostgreSQLProvider
 {
-	public class PgRoleProvider : RoleProvider
-	{
-		private const string m_RolesTableName = "Roles";
-		private const string m_UserInRolesTableName = "UsersInRoles";
-		private string m_ConnectionString = string.Empty;
+    public class PgRoleProvider : RoleProvider
+    {
+        private const string m_RolesTableName = "Roles";
+        private const string m_UserInRolesTableName = "UsersInRoles";
+        private string m_ConnectionString = string.Empty;
 
-		/// <summary>
-		/// System.Configuration.Provider.ProviderBase.Initialize Method
-		/// </summary>
-		public override void Initialize(string name, NameValueCollection config)
-		{
-			// Initialize values from web.config.
-			if (config == null)
-				throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
+        /// <summary>
+        /// System.Configuration.Provider.ProviderBase.Initialize Method
+        /// </summary>
+        public override void Initialize(string name, NameValueCollection config)
+        {
+            // Initialize values from web.config.
+            if (config == null)
+                throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
 
-			if (string.IsNullOrEmpty(name))
-				name = Properties.Resources.RoleProviderDefaultName;
+            if (string.IsNullOrEmpty(name))
+                name = Properties.Resources.RoleProviderDefaultName;
 
-			if (string.IsNullOrEmpty(config["description"]))
-			{
-				config.Remove("description");
-				config.Add("description", Properties.Resources.RoleProviderDefaultDescription);
-			}
+            if (string.IsNullOrEmpty(config["description"]))
+            {
+                config.Remove("description");
+                config.Add("description", Properties.Resources.RoleProviderDefaultDescription);
+            }
 
-			// Initialize the abstract base class.
-			base.Initialize(name, config);
+            // Initialize the abstract base class.
+            base.Initialize(name, config);
 
 			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
-			// Get connection string.
-			string connStrName = config["connectionStringName"];
+            // Get connection string.
+            string connStrName = config["connectionStringName"];
 
-			if (string.IsNullOrEmpty(connStrName))
-			{
-				throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
-			}
-			else
-			{
-				ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
+            if (string.IsNullOrEmpty(connStrName))
+            {
+                throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
+            }
+            else
+            {
+                ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
 
-				if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
-				{
-					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
-				}
+                if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
+                {
+                    throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
+                }
 
-				m_ConnectionString = ConnectionStringSettings.ConnectionString;
-			}
-		}
+                m_ConnectionString = ConnectionStringSettings.ConnectionString;
+            }
+        }
 
-		/// <summary>
-		/// System.Web.Security.RoleProvider properties.
-		/// </summary>
-		#region System.Web.Security.RoleProvider properties
-		private string m_ApplicationName = string.Empty;
+        /// <summary>
+        /// System.Web.Security.RoleProvider properties.
+        /// </summary>
+        #region System.Web.Security.RoleProvider properties
+        private string m_ApplicationName = string.Empty;
 
-		public override string ApplicationName
-		{
-			get { return m_ApplicationName; }
-			set { m_ApplicationName = value; }
-		}
-		#endregion
+        public override string ApplicationName
+        {
+            get { return m_ApplicationName; }
+            set { m_ApplicationName = value; }
+        }
+        #endregion
 
-		/// <summary>
-		/// System.Web.Security.RoleProvider methods.
-		/// </summary>
-		#region System.Web.Security.RoleProvider methods
+        /// <summary>
+        /// System.Web.Security.RoleProvider methods.
+        /// </summary>
+        #region System.Web.Security.RoleProvider methods
 
-		/// <summary>
-		/// RoleProvider.AddUsersToRoles
-		/// </summary>
-		public override void AddUsersToRoles(string[] userNames, string[] roleNames)
-		{
-			foreach (string rolename in roleNames)
-			{
-				if (!RoleExists(rolename))
-				{
+        /// <summary>
+        /// RoleProvider.AddUsersToRoles
+        /// </summary>
+        public override void AddUsersToRoles(string[] userNames, string[] roleNames)
+        {
+            foreach (string rolename in roleNames)
+            {
+                if (!RoleExists(rolename))
+                {
 					throw new ProviderException(string.Format(Properties.Resources.ErrRoleNotExist, rolename));
-				}
-			}
+                }
+            }
 
-			foreach (string username in userNames)
-			{
-				foreach (string rolename in roleNames)
-				{
-					if (IsUserInRole(username, rolename))
-					{
+            foreach (string username in userNames)
+            {
+                foreach (string rolename in roleNames)
+                {
+                    if (IsUserInRole(username, rolename))
+                    {
 						throw new ProviderException(string.Format(Properties.Resources.ErrUserAlreadyInRole, username, rolename));
-					}
-				}
-			}
+                    }
+                }
+            }
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"Username\", \"Rolename\", \"ApplicationName\") Values (@Username, @Rolename, @ApplicationName)", m_UserInRolesTableName);
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("INSERT INTO {0} (Username, Rolename, ApplicationName) Values (@Username, @Rolename, @ApplicationName)", m_UserInRolesTableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255);
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255);
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255);
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255);
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-					NpgsqlTransaction dbTrans = null;
+                    NpgsqlTransaction dbTrans = null;
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							foreach (string username in userNames)
-							{
-								foreach (string rolename in roleNames)
-								{
-									dbCommand.Parameters["@Username"].Value = username;
-									dbCommand.Parameters["@Rolename"].Value = rolename;
-									dbCommand.ExecuteNonQuery();
-								}
-							}
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-
-						try
-						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
-						}
-
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
-
-		/// <summary>
-		/// RoleProvider.CreateRole
-		/// </summary>
-		public override void CreateRole(string roleName)
-		{
-			if (RoleExists(roleName))
-			{
-				throw new ProviderException(string.Format(Properties.Resources.ErrRoleAlreadyExist, roleName));
-			}
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"Rolename\", \"ApplicationName\") Values (@Rolename, @ApplicationName)", m_RolesTableName);
-
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						dbCommand.ExecuteNonQuery();
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
-
-		/// <summary>
-		/// RoleProvider.DeleteRole
-		/// </summary>
-		public override bool DeleteRole(string roleName, bool throwOnPopulatedRole)
-		{
-			if (!RoleExists(roleName))
-			{
-				throw new ProviderException(string.Format(Properties.Resources.ErrRoleNotExist, roleName));
-			}
-
-			if (throwOnPopulatedRole && GetUsersInRole(roleName).Length > 0)
-			{
-				throw new ProviderException(Properties.Resources.ErrCantDeletePopulatedRole);
-			}
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("DELETE FROM \"{0}\" WHERE \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_RolesTableName);
-
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					NpgsqlTransaction dbTrans = null;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							dbCommand.ExecuteNonQuery();
-
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-
-						try
-						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
-						}
-
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return true;
-		}
-
-		/// <summary>
-		/// RoleProvider.FindUsersInRole
-		/// </summary>
-		public override string[] FindUsersInRole(string roleName, string usernameToMatch)
-		{
-			List<string> userList = new List<string>();
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Username\" FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
-
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								while (reader.Read())
-								{
-									userList.Add(reader.GetString(0));
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return userList.ToArray();
-		}
-
-		/// <summary>
-		/// RoleProvider.GetAllRoles
-		/// </summary>
-		public override string[] GetAllRoles()
-		{
-			List<string> rolesList = new List<string>();
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Rolename\" FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName", m_RolesTableName);
-
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								rolesList.Add(reader.GetString(0));
-							}
-						}						
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return rolesList.ToArray();
-		}
-
-		/// <summary>
-		/// RoleProvider.GetRolesForUser
-		/// </summary>
-		public override string[] GetRolesForUser(string username)
-		{
-			List<string> rolesList = new List<string>();
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Rolename\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
-
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								while (reader.Read())
-								{
-									rolesList.Add(reader.GetString(0));
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return rolesList.ToArray();
-		}
-
-		/// <summary>
-		/// RoleProvider.GetUsersInRole
-		/// </summary>
-		public override string[] GetUsersInRole(string roleName)
-		{
-			List<string> userList = new List<string>();
-
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT \"Username\" FROM \"{0}\" WHERE \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
-
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
-						{
-							if (reader.HasRows)
-							{
-								while (reader.Read())
-								{
-									userList.Add(reader.GetString(0));
-								}
-							}
-						}
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return userList.ToArray();
-		}
-
-		/// <summary>
-		/// RoleProvider.IsUserInRole
-		/// </summary>
-		public override bool IsUserInRole(string userName, string roleName)
-		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT COUNT(*) FROM \"{0}\" WHERE \"Username\" = @Username AND \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
-
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
-
-						int numRecs = 0;
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
-
-						if (numRecs > 0)
-							return true;
-					}
-					catch (NpgsqlException e)
-					{
-						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-
-			return false;
-		}
-
-		/// <summary>
-		/// RoleProvider.RemoveUsersFromRoles
-		/// </summary>
-		public override void RemoveUsersFromRoles(string[] userNames, string[] roleNames)
-		{
-			foreach (string rolename in roleNames)
-			{
-				if (!RoleExists(rolename))
-				{
-					throw new ProviderException(string.Format(Properties.Resources.ErrRoleNotExist, rolename));
-				}
-			}
-
+                    try
+                    {
+                        dbConn.Open();
+			dbTrans = dbConn.BeginTransaction();
 			foreach (string username in userNames)
 			{
-				foreach (string rolename in roleNames)
-				{
-					if (!IsUserInRole(username, rolename))
-					{
-						throw new ProviderException(string.Format(Properties.Resources.ErrUserIsNotInRole, username, rolename));
-					}
-				}
+			  foreach (string rolename in roleNames)
+			  {
+			    dbCommand.Parameters["@Username"].Value = username;
+			    dbCommand.Parameters["@Rolename"].Value = rolename;
+			    dbCommand.ExecuteNonQuery();
+			  }
 			}
+			// Attempt to commit the transaction
+			dbTrans.Commit();
+                    }
+                    catch (NpgsqlException e)
+                    {
+		      Trace.WriteLine(e.ToString());
+		      try
+		      {
+			// Attempt to roll back the transaction
+			Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+			dbTrans.Rollback();
+		      }
+		      catch (NpgsqlException re)
+		      {
+			// Rollback failed
+			Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+			Trace.WriteLine(re.ToString());
+		      }
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("DELETE FROM \"{0}\" WHERE \"Username\" = @Username AND \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
+		      throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+		      if (dbConn != null)
+			dbConn.Close();
+                    }
+                }
+            }
+        }
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255);
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255);
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+        /// <summary>
+        /// RoleProvider.CreateRole
+        /// </summary>
+        public override void CreateRole(string roleName)
+        {
+            if (RoleExists(roleName))
+            {
+				throw new ProviderException(string.Format(Properties.Resources.ErrRoleAlreadyExist, roleName));
+            }
 
-					NpgsqlTransaction dbTrans = null;
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("INSERT INTO {0} (Rolename, ApplicationName) Values (@Rolename, @ApplicationName)", m_RolesTableName);
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							foreach (string username in userNames)
-							{
-								foreach (string rolename in roleNames)
-								{
-									dbCommand.Parameters["@Username"].Value = username;
-									dbCommand.Parameters["@Rolename"].Value = rolename;
-									dbCommand.ExecuteNonQuery();
-								}
-							}
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
-					}
-					catch (NpgsqlException e)
-					{
+                    try
+                    {
+                        dbConn.Open();
+
+                        dbCommand.ExecuteNonQuery();
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// RoleProvider.DeleteRole
+        /// </summary>
+        public override bool DeleteRole(string roleName, bool throwOnPopulatedRole)
+        {
+            if (!RoleExists(roleName))
+            {
+				throw new ProviderException(string.Format(Properties.Resources.ErrRoleNotExist, roleName));
+            }
+
+            if (throwOnPopulatedRole && GetUsersInRole(roleName).Length > 0)
+            {
+                throw new ProviderException(Properties.Resources.ErrCantDeletePopulatedRole);
+            }
+
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("DELETE FROM {0} WHERE Rolename = @Rolename AND ApplicationName = @ApplicationName", m_RolesTableName);
+
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    NpgsqlTransaction dbTrans = null;
+
+                    try
+                    {
+                        dbConn.Open();
+			dbTrans = dbConn.BeginTransaction();
+			
+			dbCommand.ExecuteNonQuery();
+			
+			// Attempt to commit the transaction
+			dbTrans.Commit();
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 
 						try
@@ -604,57 +278,365 @@ namespace NauckIT.PostgreSQLProvider
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
-		}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-		/// <summary>
-		/// RoleProvider.RoleExists
-		/// </summary>
-		public override bool RoleExists(string roleName)
-		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
-			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-				{
-					dbCommand.CommandText = string.Format("SELECT COUNT(*) FROM \"{0}\" WHERE \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_RolesTableName);
+            return true;
+        }
 
-					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+        /// <summary>
+        /// RoleProvider.FindUsersInRole
+        /// </summary>
+        public override string[] FindUsersInRole(string roleName, string usernameToMatch)
+        {
+            List<string> userList = new List<string>();
 
-					try
-					{
-						dbConn.Open();
-						dbCommand.Prepare();
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Username FROM {0} WHERE Username ILIKE @Username AND Rolename = @Rolename AND ApplicationName = @ApplicationName", m_UserInRolesTableName);
 
-						int numRecs = 0;
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-						if (numRecs > 0)
-							return true;
-					}
-					catch (NpgsqlException e)
-					{
+                    try
+                    {
+                        dbConn.Open();
+
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    userList.Add(reader.GetString(0));
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
 						Trace.WriteLine(e.ToString());
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
-						if (dbConn != null)
-							dbConn.Close();
-					}
-				}
-			}
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
 
-			return false;
-		}
-		#endregion
+            return userList.ToArray();
+        }
+
+        /// <summary>
+        /// RoleProvider.GetAllRoles
+        /// </summary>
+        public override string[] GetAllRoles()
+        {
+            List<string> rolesList = new List<string>();
+
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Rolename FROM {0} WHERE ApplicationName = @ApplicationName", m_RolesTableName);
+
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    try
+                    {
+                        dbConn.Open();
+
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                rolesList.Add(reader.GetString(0));
+                            }
+                        }                        
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+
+            return rolesList.ToArray();
+        }
+
+        /// <summary>
+        /// RoleProvider.GetRolesForUser
+        /// </summary>
+        public override string[] GetRolesForUser(string username)
+        {
+            List<string> rolesList = new List<string>();
+
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Rolename FROM {0} WHERE Username = @Username AND ApplicationName = @ApplicationName", m_UserInRolesTableName);
+
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    try
+                    {
+                        dbConn.Open();
+
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    rolesList.Add(reader.GetString(0));
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+
+            return rolesList.ToArray();
+        }
+
+        /// <summary>
+        /// RoleProvider.GetUsersInRole
+        /// </summary>
+        public override string[] GetUsersInRole(string roleName)
+        {
+            List<string> userList = new List<string>();
+
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT Username FROM {0} WHERE Rolename = @Rolename AND ApplicationName = @ApplicationName", m_UserInRolesTableName);
+
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    try
+                    {
+                        dbConn.Open();
+
+                        using (NpgsqlDataReader reader = dbCommand.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    userList.Add(reader.GetString(0));
+                                }
+                            }
+                        }
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+
+            return userList.ToArray();
+        }
+
+        /// <summary>
+        /// RoleProvider.IsUserInRole
+        /// </summary>
+        public override bool IsUserInRole(string userName, string roleName)
+        {
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT COUNT(*) FROM {0} WHERE Username = @Username AND Rolename = @Rolename AND ApplicationName = @ApplicationName", m_UserInRolesTableName);
+
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    try
+                    {
+                        dbConn.Open();
+
+                        int numRecs = 0;
+                        Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
+
+                        if (numRecs > 0)
+                            return true;
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// RoleProvider.RemoveUsersFromRoles
+        /// </summary>
+        public override void RemoveUsersFromRoles(string[] userNames, string[] roleNames)
+        {
+            foreach (string rolename in roleNames)
+            {
+                if (!RoleExists(rolename))
+                {
+					throw new ProviderException(string.Format(Properties.Resources.ErrRoleNotExist, rolename));
+                }
+            }
+
+            foreach (string username in userNames)
+            {
+                foreach (string rolename in roleNames)
+                {
+                    if (!IsUserInRole(username, rolename))
+                    {
+						throw new ProviderException(string.Format(Properties.Resources.ErrUserIsNotInRole, username, rolename));
+                    }
+                }
+            }
+
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("DELETE FROM {0} WHERE Username = @Username AND Rolename = @Rolename AND ApplicationName = @ApplicationName", m_UserInRolesTableName);
+
+                    dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255);
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255);
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    NpgsqlTransaction dbTrans = null;
+
+                    try
+                    {
+                        dbConn.Open();
+			dbTrans = dbConn.BeginTransaction();
+			
+			foreach (string username in userNames)
+			{
+			  foreach (string rolename in roleNames)
+			  {
+			    dbCommand.Parameters["@Username"].Value = username;
+			    dbCommand.Parameters["@Rolename"].Value = rolename;
+			    dbCommand.ExecuteNonQuery();
+			  }
+			}
+			// Attempt to commit the transaction
+			dbTrans.Commit();
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// RoleProvider.RoleExists
+        /// </summary>
+        public override bool RoleExists(string roleName)
+        {
+            using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+            {
+                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                {
+                    dbCommand.CommandText = string.Format("SELECT COUNT(*) FROM {0} WHERE Rolename = @Rolename AND ApplicationName = @ApplicationName", m_RolesTableName);
+
+                    dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
+                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+                    try
+                    {
+                        dbConn.Open();
+
+                        int numRecs = 0;
+                        Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
+
+                        if (numRecs > 0)
+                            return true;
+                    }
+                    catch (NpgsqlException e)
+                    {
+						Trace.WriteLine(e.ToString());
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                    }
+                    finally
+                    {
+                        if (dbConn != null)
+                            dbConn.Close();
+                    }
+                }
+            }
+
+            return false;
+        }
+        #endregion
 
 		#region private methods
 		/// <summary>
@@ -671,5 +653,5 @@ namespace NauckIT.PostgreSQLProvider
 			return configValue;
 		}
 		#endregion	
-	}
+    }
 }
