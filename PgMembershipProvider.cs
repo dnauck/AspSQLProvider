@@ -651,7 +651,7 @@ namespace NauckIT.PostgreSQLProvider
 					}
 					catch (NpgsqlException e)
 					{
-						//TODO: logging
+						Trace.WriteLine(e.ToString());
 						throw e;
 					}
 					finally
@@ -1376,6 +1376,9 @@ namespace NauckIT.PostgreSQLProvider
 		/// <returns></returns>
 		private string EncodePassword(string password)
 		{
+			if (string.IsNullOrEmpty(password))
+				return password;
+
 			string encodedPassword = password;
 
 			switch (PasswordFormat)
