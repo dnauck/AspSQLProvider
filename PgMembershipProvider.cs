@@ -473,6 +473,10 @@ namespace NauckIT.PostgreSQLProvider
 			totalRecords = 0;
 			MembershipUserCollection users = new MembershipUserCollection();
 
+			// replace permitted wildcard characters 
+			emailToMatch = emailToMatch.Replace('*','%');
+			emailToMatch = emailToMatch.Replace('?', '_');
+
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
 			{
 				// Get user count
@@ -551,6 +555,10 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			totalRecords = 0;
 			MembershipUserCollection users = new MembershipUserCollection();
+
+			// replace permitted wildcard characters 
+			usernameToMatch = usernameToMatch.Replace('*', '%');
+			usernameToMatch = usernameToMatch.Replace('?', '_');
 
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
 			{
