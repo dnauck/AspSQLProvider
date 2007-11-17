@@ -219,4 +219,10 @@
   <data name="RoleProviderDefaultName" xml:space="preserve">
     <value>PostgreSQLRoleProvider</value>
   </data>
+  <data name="SessionStoreProviderDefaultDescription" xml:space="preserve">
+    <value>A PostgreSQL Session-Store Provider</value>
+  </data>
+  <data name="SessionStoreProviderDefaultName" xml:space="preserve">
+    <value>PostgreSQLSessionStoreProvider</value>
+  </data>
 </root>

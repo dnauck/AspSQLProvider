@@ -365,5 +365,23 @@ namespace NauckIT.PostgreSQLProvider.Properties {
                 return ResourceManager.GetString("RoleProviderDefaultName", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A PostgreSQL Session-Store Provider.
+        /// </summary>
+        internal static string SessionStoreProviderDefaultDescription {
+            get {
+                return ResourceManager.GetString("SessionStoreProviderDefaultDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PostgreSQLSessionStoreProvider.
+        /// </summary>
+        internal static string SessionStoreProviderDefaultName {
+            get {
+                return ResourceManager.GetString("SessionStoreProviderDefaultName", resourceCulture);
+            }
+        }
     }
 }

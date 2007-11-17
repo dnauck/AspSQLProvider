@@ -28,13 +28,64 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
+using System.Configuration.Provider;
 using System.Text;
+using System.Web.Hosting;
 using System.Web.SessionState;
 
 namespace NauckIT.PostgreSQLProvider
 {
 	public class PgSessionStateStoreProvider : SessionStateStoreProviderBase
 	{
+		private const string m_TableName = "Sessions";
+		private string m_ConnectionString = string.Empty;
+		private string m_ApplicationName = string.Empty;
+
+		/// <summary>
+		/// System.Configuration.Provider.ProviderBase.Initialize Method
+		/// </summary>
+		public override void Initialize(string name, NameValueCollection config)
+		{
+			// Initialize values from web.config.
+			if (config == null)
+				throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
+
+			if (string.IsNullOrEmpty(name))
+				name = Properties.Resources.SessionStoreProviderDefaultName;
+
+			if (string.IsNullOrEmpty(config["description"]))
+			{
+				config.Remove("description");
+				config.Add("description", Properties.Resources.SessionStoreProviderDefaultDescription);
+			}
+
+			// Initialize the abstract base class.
+			base.Initialize(name, config);
+
+			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+
+			// Get connection string.
+			string connStrName = config["connectionStringName"];
+
+			if (string.IsNullOrEmpty(connStrName))
+			{
+				throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
+			}
+			else
+			{
+				ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
+
+				if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
+				{
+					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
+				}
+
+				m_ConnectionString = ConnectionStringSettings.ConnectionString;
+			}
+		}
+
 		public override SessionStateStoreData CreateNewStoreData(System.Web.HttpContext context, int timeout)
 		{
 			throw new Exception("The method or operation is not implemented.");
@@ -94,5 +145,21 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			throw new Exception("The method or operation is not implemented.");
 		}
+
+		#region private methods
+		/// <summary>
+		/// A helper function to retrieve config values from the configuration file.
+		/// </summary>
+		/// <param name="configValue"></param>
+		/// <param name="defaultValue"></param>
+		/// <returns></returns>
+		private string GetConfigValue(string configValue, string defaultValue)
+		{
+			if (string.IsNullOrEmpty(configValue))
+				return defaultValue;
+
+			return configValue;
+		}
+		#endregion
 	}
 }
