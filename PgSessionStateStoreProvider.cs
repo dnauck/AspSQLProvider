@@ -218,9 +218,62 @@ namespace NauckIT.PostgreSQLProvider
 			throw new Exception("The method or operation is not implemented.");
 		}
 
-		public override void ResetItemTimeout(System.Web.HttpContext context, string id)
+		/// <summary>
+		/// SessionStateProviderBase.ResetItemTimeout
+		/// </summary>
+		public override void ResetItemTimeout(HttpContext context, string id)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Expires\" = @Expires WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_Config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						using (dbTrans = dbConn.BeginTransaction())
+						{
+							dbCommand.ExecuteNonQuery();
+
+							// Attempt to commit the transaction
+							dbTrans.Commit();
+						}
+					}
+					catch (NpgsqlException e)
+					{
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 
 		/// <summary>
