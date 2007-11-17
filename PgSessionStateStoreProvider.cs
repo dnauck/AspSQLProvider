@@ -394,10 +394,18 @@ namespace NauckIT.PostgreSQLProvider
 
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
 			{
-				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand(),
+						delCommand = dbConn.CreateCommand())
 				{
 					if (newItem)
 					{
+						// Delete existing expired session if exist
+						delCommand.CommandText = string.Format("DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+
+						delCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+						delCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+						// Insert new session data
 						dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", m_TableName);
 
 						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
@@ -413,6 +421,7 @@ namespace NauckIT.PostgreSQLProvider
 					}
 					else
 					{
+						// Update existing session
 						dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked, \"Data\" = @Data WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
 
 						dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)item.Timeout);
@@ -428,10 +437,16 @@ namespace NauckIT.PostgreSQLProvider
 					try
 					{
 						dbConn.Open();
-						dbCommand.Prepare();
 
 						using (dbTrans = dbConn.BeginTransaction())
 						{
+							if (newItem)
+							{
+								delCommand.Prepare();
+								delCommand.ExecuteNonQuery();
+							}
+
+							dbCommand.Prepare();
 							dbCommand.ExecuteNonQuery();
 
 							// Attempt to commit the transaction

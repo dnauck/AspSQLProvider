@@ -367,7 +367,7 @@ namespace NauckIT.PostgreSQLProvider.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A PostgreSQL Session-Store Provider.
+        ///   Looks up a localized string similar to A PostgreSQL Session-State Store Provider.
         /// </summary>
         internal static string SessionStoreProviderDefaultDescription {
             get {
@@ -376,7 +376,7 @@ namespace NauckIT.PostgreSQLProvider.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PostgreSQLSessionStoreProvider.
+        ///   Looks up a localized string similar to PostgreSQLSessionStateStoreProvider.
         /// </summary>
         internal static string SessionStoreProviderDefaultName {
             get {
