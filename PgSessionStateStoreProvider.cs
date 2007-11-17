@@ -32,6 +32,7 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Configuration.Provider;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Web;
 using System.Web.Hosting;
@@ -186,14 +187,20 @@ namespace NauckIT.PostgreSQLProvider
 			}
 		}
 
-		public override SessionStateStoreData GetItem(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
+		/// <summary>
+		/// SessionStateProviderBase.GetItem
+		/// </summary>
+		public override SessionStateStoreData GetItem(HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			return GetSessionStoreItem(false, context, id, out locked, out lockAge, out lockId, out actions);
 		}
 
-		public override SessionStateStoreData GetItemExclusive(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
+		/// <summary>
+		/// SessionStateProviderBase.GetItemExclusive
+		/// </summary>
+		public override SessionStateStoreData GetItemExclusive(HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			return GetSessionStoreItem(true, context, id, out locked, out lockAge, out lockId, out actions);
 		}
 
 		public override void ReleaseItemExclusive(System.Web.HttpContext context, string id, object lockId)
@@ -226,6 +233,60 @@ namespace NauckIT.PostgreSQLProvider
 		#endregion
 
 		#region private methods
+
+		/// <summary>
+		/// Retrieves the session data from the data source.
+		/// </summary>
+		/// <param name="lockRecord">If true GetSessionStoreItem locks the record and sets a new LockId and LockDate.</param>	
+		private SessionStateStoreData GetSessionStoreItem(bool lockRecord, HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actionFlags)
+		{
+			throw new Exception("The method or operation is not implemented.");
+		}
+
+		/// <summary>
+		/// Convert a SessionStateItemCollection into a Base64 string
+		/// </summary>
+		private string Serialize(SessionStateItemCollection items)
+		{
+			if (items == null || items.Count < 1)
+				return string.Empty;
+
+			using (MemoryStream mStream = new MemoryStream())
+			{
+				using (BinaryWriter bWriter = new BinaryWriter(mStream))
+				{
+					items.Serialize(bWriter);
+					bWriter.Close();
+				}
+
+				return Convert.ToBase64String(mStream.ToArray());
+			}
+		}
+
+		/// <summary>
+		/// Convert a Base64 string into a SessionStateItemCollection
+		/// </summary>
+		/// <param name="serializedItems"></param>
+		/// <returns></returns>
+		private SessionStateItemCollection Deserialize(string serializedItems)
+		{
+			SessionStateItemCollection sessionItems = new SessionStateItemCollection();
+
+			if (string.IsNullOrEmpty(serializedItems))
+				return sessionItems;
+
+			using (MemoryStream mStream = new MemoryStream(Convert.FromBase64String(serializedItems)))
+			{
+				using (BinaryReader bReader = new BinaryReader(mStream))
+				{
+					sessionItems = SessionStateItemCollection.Deserialize(bReader);
+					bReader.Close();
+				}
+			}
+
+			return sessionItems;
+		}
+
 		/// <summary>
 		/// A helper function to retrieve config values from the configuration file.
 		/// </summary>
