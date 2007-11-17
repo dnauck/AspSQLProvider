@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Configuration.Provider;
+using System.Diagnostics;
 using System.Text;
 using System.Web;
 using System.Web.Hosting;
@@ -120,9 +121,69 @@ namespace NauckIT.PostgreSQLProvider
 			return new SessionStateStoreData(new SessionStateItemCollection(), SessionStateUtility.GetSessionStaticObjects(context), timeout);
 		}
 
-		public override void CreateUninitializedItem(System.Web.HttpContext context, string id, int timeout)
+		/// <summary>
+		/// SessionStateProviderBase.CreateUninitializedItem
+		/// </summary>
+		public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", m_TableName);
+
+					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)timeout);
+					dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = timeout;
+					dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+					dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = 0;
+					dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+					dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = string.Empty;
+					dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 1;
+
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						using (dbTrans = dbConn.BeginTransaction())
+						{
+							dbCommand.ExecuteNonQuery();
+
+							// Attempt to commit the transaction
+							dbTrans.Commit();
+						}
+					}
+					catch (NpgsqlException e)
+					{
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 
 		public override SessionStateStoreData GetItem(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
