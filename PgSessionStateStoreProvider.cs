@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Web;
+using System.Web.Configuration;
 using System.Web.Hosting;
 using System.Web.SessionState;
 using Npgsql;
@@ -47,6 +48,7 @@ namespace NauckIT.PostgreSQLProvider
 		private const string m_TableName = "Sessions";
 		private string m_ConnectionString = string.Empty;
 		private string m_ApplicationName = string.Empty;
+		private SessionStateSection m_Config = null;
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -89,6 +91,9 @@ namespace NauckIT.PostgreSQLProvider
 
 				m_ConnectionString = ConnectionStringSettings.ConnectionString;
 			}
+
+			// Get <sessionState> configuration element.
+			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(m_ApplicationName).GetSection("system.web/sessionState");
 		}
 
 		/// <summary>
@@ -240,7 +245,110 @@ namespace NauckIT.PostgreSQLProvider
 		/// <param name="lockRecord">If true GetSessionStoreItem locks the record and sets a new LockId and LockDate.</param>	
 		private SessionStateStoreData GetSessionStoreItem(bool lockRecord, HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actionFlags)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			SessionStateStoreData result = null;
+			lockAge = TimeSpan.Zero;
+			lockId = null;
+			locked = false;
+			actionFlags = 0;
+			DateTime expires = DateTime.MinValue;
+			int timeout = 0;
+			string serializedItems = null;
+
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				NpgsqlTransaction dbTrans = null;
+				try
+				{
+					dbConn.Open();
+
+					using (dbTrans = dbConn.BeginTransaction())
+					{
+						// Retrieve the current session item information and lock row
+						using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+						{
+							dbCommand.CommandText = string.Format("SELECT \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\" FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName FOR UPDATE", m_TableName);
+
+							dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+							using (NpgsqlDataReader reader = dbCommand.ExecuteReader(System.Data.CommandBehavior.SingleRow))
+							{
+								while (reader.Read())
+								{
+									expires = reader.GetDateTime(0);
+									timeout = reader.GetInt32(1);
+									locked = reader.GetBoolean(2);
+									lockId = reader.GetInt32(3);
+									lockAge = DateTime.Now.Subtract(reader.GetDateTime(4));
+
+									if (!reader.IsDBNull(5))
+										serializedItems = reader.GetString(5);
+
+									actionFlags = (SessionStateActions)reader.GetInt32(6);
+								}
+								reader.Close();
+							}
+						}
+
+						// If record was not found, is expired or is locked, return.
+						if (expires < DateTime.Now || locked)
+							return result;
+
+						// If the actionFlags parameter is not InitializeItem, deserialize the stored SessionStateItemCollection
+						if (actionFlags == SessionStateActions.InitializeItem)
+							result = CreateNewStoreData(context, m_Config.Timeout.Minutes);
+						else
+							result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_Config.Timeout.Minutes);
+
+						if (lockRecord)
+						{
+							// Obtain a lock to the record
+							using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+							{
+								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+
+								dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = true;
+								dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = (int)lockId + 1;
+								dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+								dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
+								dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+								dbCommand.ExecuteNonQuery();
+							}
+						}
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
+					}
+				}
+				catch (NpgsqlException e)
+				{
+					Trace.WriteLine(e.ToString());
+
+					try
+					{
+						// Attempt to roll back the transaction
+						Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+						dbTrans.Rollback();
+					}
+					catch (NpgsqlException re)
+					{
+						// Rollback failed
+						Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+						Trace.WriteLine(re.ToString());
+					}
+
+					throw new ProviderException(Properties.Resources.ErrOperationAborted);
+				}
+				finally
+				{
+					if (dbConn != null)
+						dbConn.Close();
+				}
+
+				return result;
+			}
 		}
 
 		/// <summary>
