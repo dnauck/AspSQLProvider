@@ -540,13 +540,14 @@ namespace NauckIT.PostgreSQLProvider
 
 						if (lockRecord)
 						{
+							lockId = (int)lockId + 1;
 							// Obtain a lock to the record
 							using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 							{
 								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
 
 								dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = true;
-								dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = (int)lockId + 1;
+								dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
 								dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 								dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
 								dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
