@@ -93,7 +93,7 @@ namespace NauckIT.PostgreSQLProvider
 			}
 
 			// Get <sessionState> configuration element.
-			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(m_ApplicationName).GetSection("system.web/sessionState");
+			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
 		}
 
 		/// <summary>
@@ -223,9 +223,86 @@ namespace NauckIT.PostgreSQLProvider
 			throw new Exception("The method or operation is not implemented.");
 		}
 
-		public override void SetAndReleaseItemExclusive(System.Web.HttpContext context, string id, SessionStateStoreData item, object lockId, bool newItem)
+		/// <summary>
+		/// SessionStateProviderBase.SetAndReleaseItemExclusive
+		/// </summary>
+		public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item, object lockId, bool newItem)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			// Serialize the SessionStateItemCollection as a string
+			string serializedItems = Serialize((SessionStateItemCollection)item.Items);
+
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					if (newItem)
+					{
+						dbCommand.CommandText = string.Format("INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", m_TableName);
+
+						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+						dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)item.Timeout);
+						dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = item.Timeout;
+						dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+						dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = 0;
+						dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+						dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = serializedItems;
+						dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
+					}
+					else
+					{
+						dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked, \"Data\" = @Data WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+
+						dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)item.Timeout);
+						dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+						dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = serializedItems;
+						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
+					}
+
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						using (dbTrans = dbConn.BeginTransaction())
+						{
+							dbCommand.ExecuteNonQuery();
+
+							// Attempt to commit the transaction
+							dbTrans.Commit();
+						}
+					}
+					catch (NpgsqlException e)
+					{
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 
 		/// <summary>
