@@ -32,8 +32,11 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Configuration.Provider;
 using System.Text;
+using System.Web;
 using System.Web.Hosting;
 using System.Web.SessionState;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace NauckIT.PostgreSQLProvider
 {
@@ -86,22 +89,29 @@ namespace NauckIT.PostgreSQLProvider
 			}
 		}
 
-		public override SessionStateStoreData CreateNewStoreData(System.Web.HttpContext context, int timeout)
-		{
-			throw new Exception("The method or operation is not implemented.");
-		}
-
-		public override void CreateUninitializedItem(System.Web.HttpContext context, string id, int timeout)
-		{
-			throw new Exception("The method or operation is not implemented.");
-		}
+		/// <summary>
+		/// SessionStateStoreProviderBase members
+		/// </summary>
+		#region SessionStateStoreProviderBase members
 
 		public override void Dispose()
 		{
-			throw new Exception("The method or operation is not implemented.");
 		}
 
-		public override void EndRequest(System.Web.HttpContext context)
+		public override void InitializeRequest(HttpContext context)
+		{
+		}
+
+		public override void EndRequest(HttpContext context)
+		{
+		}
+
+		public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
+		{
+			return new SessionStateStoreData(new SessionStateItemCollection(), SessionStateUtility.GetSessionStaticObjects(context), timeout);
+		}
+
+		public override void CreateUninitializedItem(System.Web.HttpContext context, string id, int timeout)
 		{
 			throw new Exception("The method or operation is not implemented.");
 		}
@@ -112,11 +122,6 @@ namespace NauckIT.PostgreSQLProvider
 		}
 
 		public override SessionStateStoreData GetItemExclusive(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
-		{
-			throw new Exception("The method or operation is not implemented.");
-		}
-
-		public override void InitializeRequest(System.Web.HttpContext context)
 		{
 			throw new Exception("The method or operation is not implemented.");
 		}
@@ -141,10 +146,14 @@ namespace NauckIT.PostgreSQLProvider
 			throw new Exception("The method or operation is not implemented.");
 		}
 
+		/// <summary>
+		/// SessionStateProviderBase.SetItemExpireCallback
+		/// </summary>
 		public override bool SetItemExpireCallback(SessionStateItemExpireCallback expireCallback)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			return false;
 		}
+		#endregion
 
 		#region private methods
 		/// <summary>
