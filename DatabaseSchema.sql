@@ -72,3 +72,19 @@ CREATE TABLE "ProfileData" (
 	CONSTRAINT profiledata_profile_name_unique UNIQUE ("Profile", "Name"),
 	CONSTRAINT profiledata_profile_fkey FOREIGN KEY ("Profile") REFERENCES "Profiles" ("pId") ON DELETE CASCADE
 );
+
+-- PostgreSQL 8 Session-Store Provider Schema
+
+CREATE TABLE "Sessions" (
+	"SessionId"				character varying(80)	NOT NULL,
+	"ApplicationName"		character varying(255)	NOT NULL,
+	"Created"				timestamptz				NOT NULL,
+	"Expires"				timestamptz				NOT NULL,
+	"Timeout"				integer					NOT NULL,
+	"Locked"				boolean					NOT NULL,
+	"LockId"				integer					NOT NULL,
+	"LockDate"				timestamptz				NOT NULL,
+	"Data"					text					NULL,
+	"Flags"					integer					NOT NULL,
+	CONSTRAINT sessions_pkey PRIMARY KEY ("SessionId", "ApplicationName")
+);
