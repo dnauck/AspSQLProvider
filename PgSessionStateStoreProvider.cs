@@ -98,14 +98,23 @@ namespace NauckIT.PostgreSQLProvider
 		{
 		}
 
+		/// <summary>
+		/// SessionStateProviderBase.InitializeRequest
+		/// </summary>
 		public override void InitializeRequest(HttpContext context)
 		{
 		}
 
+		/// <summary>
+		/// SessionStateProviderBase.EndRequest
+		/// </summary>
 		public override void EndRequest(HttpContext context)
 		{
 		}
 
+		/// <summary>
+		/// SessionStateProviderBase.CreateNewStoreData
+		/// </summary>
 		public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
 		{
 			return new SessionStateStoreData(new SessionStateItemCollection(), SessionStateUtility.GetSessionStaticObjects(context), timeout);
