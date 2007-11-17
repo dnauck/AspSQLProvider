@@ -208,14 +208,122 @@ namespace NauckIT.PostgreSQLProvider
 			return GetSessionStoreItem(true, context, id, out locked, out lockAge, out lockId, out actions);
 		}
 
-		public override void ReleaseItemExclusive(System.Web.HttpContext context, string id, object lockId)
+		/// <summary>
+		/// SessionStateProviderBase.ReleaseItemExclusive
+		/// </summary>
+		public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_Config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
+					
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						using (dbTrans = dbConn.BeginTransaction())
+						{
+							dbCommand.ExecuteNonQuery();
+
+							// Attempt to commit the transaction
+							dbTrans.Commit();
+						}
+					}
+					catch (NpgsqlException e)
+					{
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 
-		public override void RemoveItem(System.Web.HttpContext context, string id, object lockId, SessionStateStoreData item)
+		/// <summary>
+		/// SessionStateProviderBase.RemoveItem
+		/// </summary>
+		public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
 		{
-			throw new Exception("The method or operation is not implemented.");
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					dbCommand.CommandText = string.Format("DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+
+					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
+
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						using (dbTrans = dbConn.BeginTransaction())
+						{
+							dbCommand.ExecuteNonQuery();
+
+							// Attempt to commit the transaction
+							dbTrans.Commit();
+						}
+					}
+					catch (NpgsqlException e)
+					{
+						Trace.WriteLine(e.ToString());
+
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (NpgsqlException re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 
 		/// <summary>
