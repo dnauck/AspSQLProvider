@@ -94,6 +94,10 @@ namespace NauckIT.PostgreSQLProvider
 
 			// Get <sessionState> configuration element.
 			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
+
+			NpgsqlEventLog.Level = LogLevel.Debug;
+			NpgsqlEventLog.LogName = Path.Combine(HostingEnvironment.ApplicationPhysicalPath, "NpgsqlTests.log");
+			NpgsqlEventLog.EchoMessages = true;
 		}
 
 		/// <summary>
@@ -156,35 +160,40 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							dbCommand.ExecuteNonQuery();
+						dbTrans = dbConn.BeginTransaction();
 
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
 					}
-					catch (NpgsqlException e)
+					catch (Exception e)
 					{
 						Trace.WriteLine(e.ToString());
 
-						try
+						if (dbTrans != null)
 						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (NpgsqlException re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
 						if (dbConn != null)
 							dbConn.Close();
 					}
@@ -232,35 +241,40 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							dbCommand.ExecuteNonQuery();
+						dbTrans = dbConn.BeginTransaction();
 
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
 					}
 					catch (NpgsqlException e)
 					{
 						Trace.WriteLine(e.ToString());
 
-						try
+						if (dbTrans != null)
 						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (NpgsqlException re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
 						if (dbConn != null)
 							dbConn.Close();
 					}
@@ -290,35 +304,40 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							dbCommand.ExecuteNonQuery();
+						dbTrans = dbConn.BeginTransaction();
 
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
 					}
-					catch (NpgsqlException e)
+					catch (Exception e)
 					{
 						Trace.WriteLine(e.ToString());
 
-						try
+						if (dbTrans != null)
 						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (Exception re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
 						if (dbConn != null)
 							dbConn.Close();
 					}
@@ -348,35 +367,40 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						using (dbTrans = dbConn.BeginTransaction())
-						{
-							dbCommand.ExecuteNonQuery();
+						dbTrans = dbConn.BeginTransaction();
 
-							// Attempt to commit the transaction
-							dbTrans.Commit();
-						}
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
 					}
-					catch (NpgsqlException e)
+					catch (Exception e)
 					{
 						Trace.WriteLine(e.ToString());
 
-						try
+						if (dbTrans != null)
 						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (Exception re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
 						if (dbConn != null)
 							dbConn.Close();
 					}
@@ -437,43 +461,47 @@ namespace NauckIT.PostgreSQLProvider
 					try
 					{
 						dbConn.Open();
+						dbTrans = dbConn.BeginTransaction();
 
-						using (dbTrans = dbConn.BeginTransaction())
+						if (newItem)
 						{
-							if (newItem)
-							{
-								delCommand.Prepare();
-								delCommand.ExecuteNonQuery();
-							}
-
-							dbCommand.Prepare();
-							dbCommand.ExecuteNonQuery();
-
-							// Attempt to commit the transaction
-							dbTrans.Commit();
+							delCommand.Prepare();
+							delCommand.ExecuteNonQuery();
 						}
+
+						dbCommand.Prepare();
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
 					}
-					catch (NpgsqlException e)
+					catch (Exception e)
 					{
 						Trace.WriteLine(e.ToString());
 
-						try
+						if (dbTrans != null)
 						{
-							// Attempt to roll back the transaction
-							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-							dbTrans.Rollback();
-						}
-						catch (NpgsqlException re)
-						{
-							// Rollback failed
-							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-							Trace.WriteLine(re.ToString());
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (Exception re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
 						}
 
 						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
 						if (dbConn != null)
 							dbConn.Close();
 					}
@@ -513,90 +541,94 @@ namespace NauckIT.PostgreSQLProvider
 				try
 				{
 					dbConn.Open();
+					dbTrans = dbConn.BeginTransaction();
 
-					using (dbTrans = dbConn.BeginTransaction())
+					// Retrieve the current session item information and lock row
+					using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 					{
-						// Retrieve the current session item information and lock row
+						dbCommand.CommandText = string.Format("SELECT \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\" FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName FOR UPDATE", m_TableName);
+
+						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+
+						using (NpgsqlDataReader reader = dbCommand.ExecuteReader(System.Data.CommandBehavior.SingleRow))
+						{
+							while (reader.Read())
+							{
+								expires = reader.GetDateTime(0);
+								timeout = reader.GetInt32(1);
+								locked = reader.GetBoolean(2);
+								lockId = reader.GetInt32(3);
+								lockAge = DateTime.Now.Subtract(reader.GetDateTime(4));
+
+								if (!reader.IsDBNull(5))
+									serializedItems = reader.GetString(5);
+
+								actionFlags = (SessionStateActions)reader.GetInt32(6);
+							}
+							reader.Close();
+						}
+					}
+
+					// If record was not found, is expired or is locked, return.
+					if (expires < DateTime.Now || locked)
+						return result;
+
+					// If the actionFlags parameter is not InitializeItem, deserialize the stored SessionStateItemCollection
+					if (actionFlags == SessionStateActions.InitializeItem)
+						result = CreateNewStoreData(context, m_Config.Timeout.Minutes);
+					else
+						result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_Config.Timeout.Minutes);
+
+					if (lockRecord)
+					{
+						lockId = (int)lockId + 1;
+						// Obtain a lock to the record
 						using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 						{
-							dbCommand.CommandText = string.Format("SELECT \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\" FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName FOR UPDATE", m_TableName);
+							dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
 
+							dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = true;
+							dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
+							dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+							dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
 							dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
 							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
-							using (NpgsqlDataReader reader = dbCommand.ExecuteReader(System.Data.CommandBehavior.SingleRow))
-							{
-								while (reader.Read())
-								{
-									expires = reader.GetDateTime(0);
-									timeout = reader.GetInt32(1);
-									locked = reader.GetBoolean(2);
-									lockId = reader.GetInt32(3);
-									lockAge = DateTime.Now.Subtract(reader.GetDateTime(4));
-
-									if (!reader.IsDBNull(5))
-										serializedItems = reader.GetString(5);
-
-									actionFlags = (SessionStateActions)reader.GetInt32(6);
-								}
-								reader.Close();
-							}
+							dbCommand.ExecuteNonQuery();
 						}
-
-						// If record was not found, is expired or is locked, return.
-						if (expires < DateTime.Now || locked)
-							return result;
-
-						// If the actionFlags parameter is not InitializeItem, deserialize the stored SessionStateItemCollection
-						if (actionFlags == SessionStateActions.InitializeItem)
-							result = CreateNewStoreData(context, m_Config.Timeout.Minutes);
-						else
-							result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_Config.Timeout.Minutes);
-
-						if (lockRecord)
-						{
-							lockId = (int)lockId + 1;
-							// Obtain a lock to the record
-							using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
-							{
-								dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
-
-								dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = true;
-								dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
-								dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-								dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
-								dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
-
-								dbCommand.ExecuteNonQuery();
-							}
-						}
-
-						// Attempt to commit the transaction
-						dbTrans.Commit();
 					}
+
+					// Attempt to commit the transaction
+					dbTrans.Commit();
 				}
-				catch (NpgsqlException e)
+				catch (Exception e)
 				{
 					Trace.WriteLine(e.ToString());
 
-					try
+					if (dbTrans != null)
 					{
-						// Attempt to roll back the transaction
-						Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-						dbTrans.Rollback();
-					}
-					catch (NpgsqlException re)
-					{
-						// Rollback failed
-						Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-						Trace.WriteLine(re.ToString());
+						try
+						{
+							// Attempt to roll back the transaction
+							Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+							dbTrans.Rollback();
+						}
+						catch (Exception re)
+						{
+							// Rollback failed
+							Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+							Trace.WriteLine(re.ToString());
+						}
 					}
 
 					throw new ProviderException(Properties.Resources.ErrOperationAborted);
 				}
 				finally
 				{
+					if (dbTrans != null)
+						dbTrans.Dispose();
+
 					if (dbConn != null)
 						dbConn.Close();
 				}
