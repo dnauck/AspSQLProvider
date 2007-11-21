@@ -94,10 +94,6 @@ namespace NauckIT.PostgreSQLProvider
 
 			// Get <sessionState> configuration element.
 			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
-
-			NpgsqlEventLog.Level = LogLevel.Debug;
-			NpgsqlEventLog.LogName = Path.Combine(HostingEnvironment.ApplicationPhysicalPath, "NpgsqlTests.log");
-			NpgsqlEventLog.EchoMessages = true;
 		}
 
 		/// <summary>
