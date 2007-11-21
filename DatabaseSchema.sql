@@ -5,7 +5,7 @@ CREATE TABLE "Users" (
 	"pId"										character(36)			NOT NULL,
 	"Username"									character varying(255)	NOT NULL,
 	"ApplicationName"							character varying(255)	NOT NULL,
-	"Email"										character varying(128)	NOT NULL,
+	"Email"										character varying(128)	NULL,
 	"Comment"									character varying(128)	NULL,
 	"Password"									character varying(255)	NOT NULL,
 	"PasswordQuestion"							character varying(255)	NULL,

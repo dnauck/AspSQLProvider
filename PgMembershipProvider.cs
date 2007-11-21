@@ -332,6 +332,12 @@ namespace NauckIT.PostgreSQLProvider
 				return null;
 			}
 
+			if (RequiresUniqueEmail && string.IsNullOrEmpty(email))
+			{
+				status = MembershipCreateStatus.InvalidEmail;
+				return null;
+			}
+
 			if (RequiresUniqueEmail && !string.IsNullOrEmpty(GetUserNameByEmail(email)))
 			{
 				status = MembershipCreateStatus.DuplicateEmail;
@@ -1304,7 +1310,9 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			object providerUserKey = reader.GetValue(0);
 			string username = reader.GetString(1);
-			string email = reader.GetString(2);
+			string email = string.Empty;
+			if (!reader.IsDBNull(2))
+				email = reader.GetString(2);
 
 			string passwordQuestion = string.Empty;
 			if (!reader.IsDBNull(3))
