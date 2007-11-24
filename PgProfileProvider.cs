@@ -291,7 +291,7 @@ namespace NauckIT.PostgreSQLProvider
 							foreach (SettingsPropertyValue item in collection)
 							{
 								if (!item.IsDirty)
-									break;
+									continue;
 
 								deleteCommand.Parameters["@Name"].Value = item.Name;
 
