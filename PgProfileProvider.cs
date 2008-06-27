@@ -44,6 +44,7 @@ namespace NauckIT.PostgreSQLProvider
 		private const string m_ProfilesTableName = "Profiles";
 		private const string m_ProfileDataTableName = "ProfileData";
 		private string m_ConnectionString = string.Empty;
+		private const string m_serializationNamespace = "http://schemas.nauck-it.de/PostgreSQLProvider/1.0/";
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -221,14 +222,14 @@ namespace NauckIT.PostgreSQLProvider
 
 				if ((databaseResult.ContainsKey(item.Name)) && (databaseResult[item.Name] != null))
 				{
-					if(item.SerializeAs == SettingsSerializeAs.String)
-						itemValue.PropertyValue = SerializationHelper.DeserializeFromBase64((string)databaseResult[item.Name]);
-					
+					if (item.SerializeAs == SettingsSerializeAs.String)
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromBase64<object>((string)databaseResult[item.Name]);
+
 					else if (item.SerializeAs == SettingsSerializeAs.Xml)
-						itemValue.PropertyValue = SerializationHelper.DeserializeFromXml((string)databaseResult[item.Name]);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromXml<object>((string)databaseResult[item.Name], m_serializationNamespace);
 
 					else if (item.SerializeAs == SettingsSerializeAs.Binary)
-						itemValue.PropertyValue = SerializationHelper.DeserializeFromBinary((byte[])databaseResult[item.Name]);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromBinary<object>((byte[])databaseResult[item.Name]);
 				}
 				itemValue.IsDirty = false;				
 				result.Add(itemValue);
@@ -302,18 +303,18 @@ namespace NauckIT.PostgreSQLProvider
 								if (item.Property.SerializeAs == SettingsSerializeAs.String)
 								{
 									insertCommand.Parameters["@ValueString"].Value = SerializationHelper.SerializeToBase64(item.PropertyValue);
-									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value; //new byte[0];//DBNull.Value;
+									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value;
 								}
 								else if (item.Property.SerializeAs == SettingsSerializeAs.Xml)
 								{
-									item.SerializedValue = SerializationHelper.SerializeToXml(item.PropertyValue);
+									item.SerializedValue = SerializationHelper.SerializeToXml<object>(item.PropertyValue, m_serializationNamespace);
 									insertCommand.Parameters["@ValueString"].Value = item.SerializedValue;
-									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value; //new byte[0];//DBNull.Value;
+									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value;
 								}
 								else if (item.Property.SerializeAs == SettingsSerializeAs.Binary)
 								{
 									item.SerializedValue = SerializationHelper.SerializeToBinary(item.PropertyValue);
-									insertCommand.Parameters["@ValueString"].Value = DBNull.Value; //string.Empty;//DBNull.Value;
+									insertCommand.Parameters["@ValueString"].Value = DBNull.Value;
 									insertCommand.Parameters["@ValueBinary"].Value = item.SerializedValue;
 								}
 
