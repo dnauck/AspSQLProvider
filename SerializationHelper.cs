@@ -42,47 +42,98 @@ namespace NauckIT.PostgreSQLProvider
 			return Convert.ToBase64String(SerializeToBinary(value));
 		}
 
-		internal static object DeserializeFromBase64(string value)
+		internal static T DeserializeFromBase64<T>(string value)
 		{
-			return DeserializeFromBinary(Convert.FromBase64String(value));
+			return DeserializeFromBinary<T>(Convert.FromBase64String(value));
 		}
 
-		internal static string SerializeToXml(object value)
+		internal static string SerializeToXml<T>(T value, string nameSpace)
 		{
-			using (MemoryStream mStream = new MemoryStream())
+			using (MemoryStream stream = new MemoryStream())
 			{
-				XmlSerializer xmlFormatter = new XmlSerializer(typeof(object), "http://www.nauck-it.de/PostgreSQLProvider");
-				xmlFormatter.Serialize(mStream, value);
-				return Convert.ToBase64String(mStream.ToArray());
+				XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
+				UTF8Encoding utf8Encoding = new UTF8Encoding();
+				XmlTextWriter xmlWriter = new XmlTextWriter(stream, utf8Encoding);
+				xmlWriter.Formatting = Formatting.Indented;
+				xmlFormatter.Serialize(xmlWriter, value);
+				return utf8Encoding.GetString(stream.ToArray());
 			}
 		}
 
-		internal static object DeserializeFromXml(string value)
+		internal static void SerializeToXmlFile<T>(string fileName, T value, string nameSpace)
 		{
-			using (MemoryStream mStream = new MemoryStream(Convert.FromBase64String(value)))
+			using (FileStream stream = File.Create(fileName))
 			{
-				XmlSerializer xmlFormatter = new XmlSerializer(typeof(object), "http://www.nauck-it.de/PostgreSQLProvider");
-				return xmlFormatter.Deserialize(mStream);
+				XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
+				formatter.Serialize(stream, value);
+
+				stream.Close();
+			}
+		}
+
+		internal static T DeserializeFromXml<T>(string value, string nameSpace)
+		{
+			UTF8Encoding utf8Encoding = new UTF8Encoding();
+
+			using (MemoryStream stream = new MemoryStream(utf8Encoding.GetBytes(value)))
+			{
+				XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
+				return (T)xmlFormatter.Deserialize(stream);
+			}
+		}
+
+		internal static T DeserializeFromXmlFile<T>(string fileName, string nameSpace)
+		{
+			using (FileStream stream = File.OpenRead(fileName))
+			{
+				XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
+				T result = (T)formatter.Deserialize(stream);
+
+				stream.Close();
+				return result;
 			}
 		}
 
 		internal static byte[] SerializeToBinary(object value)
 		{
-			using (MemoryStream mStream = new MemoryStream())
+			using (MemoryStream stream = new MemoryStream())
 			{
 				BinaryFormatter binFormatter = new BinaryFormatter();
-				binFormatter.Serialize(mStream, value);
+				binFormatter.Serialize(stream, value);
 
-				return mStream.ToArray();
+				return stream.ToArray();
 			}
 		}
 
-		internal static object DeserializeFromBinary(byte[] value)
+		internal static void SerializeToBinaryFile(string fileName, object value)
 		{
-			using (MemoryStream mStream = new MemoryStream(value))
+			using (FileStream stream = File.Create(fileName))
+			{
+				BinaryFormatter formatter = new BinaryFormatter();
+				formatter.Serialize(stream, value);
+
+				stream.Close();
+			}
+		}
+
+		internal static T DeserializeFromBinary<T>(byte[] value)
+		{
+			using (MemoryStream stream = new MemoryStream(value))
 			{
 				BinaryFormatter binFormatter = new BinaryFormatter();
-				return binFormatter.Deserialize(mStream);
+				return (T)binFormatter.Deserialize(stream);
+			}
+		}
+
+		internal static T DeserializeFromBinaryFile<T>(string fileName)
+		{
+			using (FileStream stream = File.OpenRead(fileName))
+			{
+				BinaryFormatter formatter = new BinaryFormatter();
+				T result = (T)formatter.Deserialize(stream);
+
+				stream.Close();
+				return result;
 			}
 		}
 	}
