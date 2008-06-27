@@ -1,6 +1,11 @@
 //
 // $Id$
 //
+// Copyright © 2006 - 2008 Nauck IT KG		http://www.nauck-it.de
+//
+// Author:
+//	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -19,11 +24,6 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-// Copyright © 2006, 2007 Nauck IT KG		http://www.nauck-it.de
-//
-// Author:
-//	Daniel Nauck		<d.nauck(at)nauck-it.de>
 
 using System;
 using System.Collections.Generic;
@@ -663,7 +663,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <param name="configValue"></param>
 		/// <param name="defaultValue"></param>
 		/// <returns></returns>
-		private string GetConfigValue(string configValue, string defaultValue)
+		private static string GetConfigValue(string configValue, string defaultValue)
 		{
 			if (string.IsNullOrEmpty(configValue))
 				return defaultValue;

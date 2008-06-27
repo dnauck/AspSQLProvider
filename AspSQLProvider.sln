@@ -1,18 +1,60 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostgreSQLProvider", "PostgreSQLProvider.csproj", "{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}"
+EndProject
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "AspSQLProvider Example", "..\..\WebSites\AspSQLProvider Example\", "{69A45AD5-0263-496A-9C23-BDBB1DA35B25}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFramework = "3.5"
+		ProjectReferences = "{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}|NauckIT.PostgreSQLProvider.dll;"
+		Debug.AspNetCompiler.VirtualPath = "/AspSQLProvider Example"
+		Debug.AspNetCompiler.PhysicalPath = "..\..\WebSites\AspSQLProvider Example\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\AspSQLProvider Example\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/AspSQLProvider Example"
+		Release.AspNetCompiler.PhysicalPath = "..\..\WebSites\AspSQLProvider Example\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\AspSQLProvider Example\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "51594"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|.NET = Debug|.NET
 		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Release|.NET = Release|.NET
 		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Debug|.NET.ActiveCfg = Debug|Any CPU
 		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Release|.NET.ActiveCfg = Release|Any CPU
 		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Debug|.NET.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Debug|.NET.Build.0 = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Debug|Any CPU.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Debug|Mixed Platforms.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Debug|Mixed Platforms.Build.0 = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Release|.NET.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Release|.NET.Build.0 = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Release|Any CPU.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Release|Mixed Platforms.ActiveCfg = Debug|.NET
+		{69A45AD5-0263-496A-9C23-BDBB1DA35B25}.Release|Mixed Platforms.Build.0 = Debug|.NET
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

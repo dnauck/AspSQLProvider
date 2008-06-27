@@ -1,6 +1,11 @@
 //
 // $Id$
 //
+// Copyright © 2006 - 2008 Nauck IT KG		http://www.nauck-it.de
+//
+// Author:
+//	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -19,11 +24,6 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-// Copyright © 2006, 2007 Nauck IT KG		http://www.nauck-it.de
-//
-// Author:
-//	Daniel Nauck		<d.nauck(at)nauck-it.de>
 
 using System;
 using System.Collections.Generic;
@@ -35,19 +35,19 @@ using System.IO;
 
 namespace NauckIT.PostgreSQLProvider
 {
-	internal class SerializationHelper
+	internal static class SerializationHelper
 	{
-		internal string SerializeToBase64(object value)
+		internal static string SerializeToBase64(object value)
 		{
 			return Convert.ToBase64String(SerializeToBinary(value));
 		}
 
-		internal object DeserializeFromBase64(string value)
+		internal static object DeserializeFromBase64(string value)
 		{
 			return DeserializeFromBinary(Convert.FromBase64String(value));
 		}
 
-		internal string SerializeToXml(object value)
+		internal static string SerializeToXml(object value)
 		{
 			using (MemoryStream mStream = new MemoryStream())
 			{
@@ -57,7 +57,7 @@ namespace NauckIT.PostgreSQLProvider
 			}
 		}
 
-		internal object DeserializeFromXml(string value)
+		internal static object DeserializeFromXml(string value)
 		{
 			using (MemoryStream mStream = new MemoryStream(Convert.FromBase64String(value)))
 			{
@@ -66,7 +66,7 @@ namespace NauckIT.PostgreSQLProvider
 			}
 		}
 
-		internal byte[] SerializeToBinary(object value)
+		internal static byte[] SerializeToBinary(object value)
 		{
 			using (MemoryStream mStream = new MemoryStream())
 			{
@@ -77,7 +77,7 @@ namespace NauckIT.PostgreSQLProvider
 			}
 		}
 
-		internal object DeserializeFromBinary(byte[] value)
+		internal static object DeserializeFromBinary(byte[] value)
 		{
 			using (MemoryStream mStream = new MemoryStream(value))
 			{

@@ -1,6 +1,11 @@
 //
 // $Id$
 //
+// Copyright © 2006 - 2008 Nauck IT KG		http://www.nauck-it.de
+//
+// Author:
+//	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -19,11 +24,6 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-// Copyright © 2006, 2007 Nauck IT KG		http://www.nauck-it.de
-//
-// Author:
-//	Daniel Nauck		<d.nauck(at)nauck-it.de>
 
 using System;
 using System.Configuration;
@@ -44,8 +44,6 @@ namespace NauckIT.PostgreSQLProvider
 		private const string m_ProfilesTableName = "Profiles";
 		private const string m_ProfileDataTableName = "ProfileData";
 		private string m_ConnectionString = string.Empty;
-
-		private SerializationHelper m_serializationHelper = new SerializationHelper();
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -224,13 +222,13 @@ namespace NauckIT.PostgreSQLProvider
 				if ((databaseResult.ContainsKey(item.Name)) && (databaseResult[item.Name] != null))
 				{
 					if(item.SerializeAs == SettingsSerializeAs.String)
-						itemValue.PropertyValue = m_serializationHelper.DeserializeFromBase64((string)databaseResult[item.Name]);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromBase64((string)databaseResult[item.Name]);
 					
 					else if (item.SerializeAs == SettingsSerializeAs.Xml)
-						itemValue.PropertyValue = m_serializationHelper.DeserializeFromXml((string)databaseResult[item.Name]);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromXml((string)databaseResult[item.Name]);
 
 					else if (item.SerializeAs == SettingsSerializeAs.Binary)
-						itemValue.PropertyValue = m_serializationHelper.DeserializeFromBinary((byte[])databaseResult[item.Name]);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromBinary((byte[])databaseResult[item.Name]);
 				}
 				itemValue.IsDirty = false;				
 				result.Add(itemValue);
@@ -245,6 +243,9 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			string username = (string)context["UserName"];
 			bool isAuthenticated = (bool)context["IsAuthenticated"];
+
+			if (string.IsNullOrEmpty(username))
+				return;
 
 			if (collection.Count < 1)
 				return;
@@ -300,18 +301,18 @@ namespace NauckIT.PostgreSQLProvider
 
 								if (item.Property.SerializeAs == SettingsSerializeAs.String)
 								{
-									insertCommand.Parameters["@ValueString"].Value = m_serializationHelper.SerializeToBase64(item.PropertyValue);
+									insertCommand.Parameters["@ValueString"].Value = SerializationHelper.SerializeToBase64(item.PropertyValue);
 									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value; //new byte[0];//DBNull.Value;
 								}
 								else if (item.Property.SerializeAs == SettingsSerializeAs.Xml)
 								{
-									item.SerializedValue = m_serializationHelper.SerializeToXml(item.PropertyValue);
+									item.SerializedValue = SerializationHelper.SerializeToXml(item.PropertyValue);
 									insertCommand.Parameters["@ValueString"].Value = item.SerializedValue;
 									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value; //new byte[0];//DBNull.Value;
 								}
 								else if (item.Property.SerializeAs == SettingsSerializeAs.Binary)
 								{
-									item.SerializedValue = m_serializationHelper.SerializeToBinary(item.PropertyValue);
+									item.SerializedValue = SerializationHelper.SerializeToBinary(item.PropertyValue);
 									insertCommand.Parameters["@ValueString"].Value = DBNull.Value; //string.Empty;//DBNull.Value;
 									insertCommand.Parameters["@ValueBinary"].Value = item.SerializedValue;
 								}
