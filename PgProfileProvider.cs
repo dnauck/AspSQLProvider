@@ -321,8 +321,6 @@ namespace NauckIT.PostgreSQLProvider
 								insertCommand.ExecuteNonQuery();
 							}
 
-							UpdateActivityDates(username, isAuthenticated, false);
-
 							// Attempt to commit the transaction
 							dbTrans.Commit();
 						}
@@ -353,6 +351,8 @@ namespace NauckIT.PostgreSQLProvider
 					}
 				}
 			}
+
+			UpdateActivityDates(username, isAuthenticated, false);
 		}
 		#endregion
 
@@ -365,9 +365,7 @@ namespace NauckIT.PostgreSQLProvider
 		private void CreateProfileForUser(string username, bool isAuthenticated)
 		{
 			if (ProfileExists(username))
-			{
 				throw new ProviderException(string.Format(Properties.Resources.ErrProfileAlreadyExist, username));
-			}
 
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
 			{
@@ -379,8 +377,8 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 					dbCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
-					dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ, 255).Value = DateTime.Now;
-					dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ, 255).Value = DateTime.Now;
+					dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+					dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 
 					try
 					{
@@ -460,14 +458,14 @@ namespace NauckIT.PostgreSQLProvider
 					{
 						dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", m_ProfilesTableName);
 
-						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ, 255).Value = DateTime.Now;
+						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					}
 					else
 					{
-						dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate, \"LastUpdatedDate\" = @LastUpdatedDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", m_ProfilesTableName);
+						dbCommand.CommandText = string.Format("UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate, \"LastUpdatedDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", m_ProfilesTableName);
 
-						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ, 255).Value = DateTime.Now;
-						dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ, 255).Value = DateTime.Now;
+						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+						//dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					}
 					
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
