@@ -142,6 +142,15 @@ namespace NauckIT.PostgreSQLProvider.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot find config section &apos;{0}&apos;..
+        /// </summary>
+        internal static string ErrConfigSectionNotFound {
+            get {
+                return ResourceManager.GetString("ErrConfigSectionNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Connection string cannot be null or empty..
         /// </summary>
         internal static string ErrConnectionStringNullOrEmpty {

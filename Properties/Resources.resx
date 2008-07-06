@@ -144,6 +144,9 @@
   <data name="ErrCantUpdateFailtureCountAndWindowStart" xml:space="preserve">
     <value>Unable to update failure count and window start.</value>
   </data>
+  <data name="ErrConfigSectionNotFound" xml:space="preserve">
+    <value>Cannot find config section '{0}'.</value>
+  </data>
   <data name="ErrConnectionStringNullOrEmpty" xml:space="preserve">
     <value>Connection string cannot be null or empty.</value>
   </data>
