@@ -46,10 +46,10 @@ namespace NauckIT.PostgreSQLProvider
 {
 	public class PgSessionStateStoreProvider : SessionStateStoreProviderBase
 	{
-		private const string m_TableName = "Sessions";
-		private string m_ConnectionString = string.Empty;
-		private string m_ApplicationName = string.Empty;
-		private SessionStateSection m_Config = null;
+		private const string s_tableName = "Sessions";
+		private string m_connectionString = string.Empty;
+		private string m_applicationName = string.Empty;
+		private SessionStateSection m_config = null;
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -72,7 +72,7 @@ namespace NauckIT.PostgreSQLProvider
 			// Initialize the abstract base class.
 			base.Initialize(name, config);
 
-			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+			m_applicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
 			// Get connection string.
 			string connStrName = config["connectionStringName"];
@@ -90,11 +90,11 @@ namespace NauckIT.PostgreSQLProvider
 					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
 				}
 
-				m_ConnectionString = ConnectionStringSettings.ConnectionString;
+				m_connectionString = ConnectionStringSettings.ConnectionString;
 			}
 
 			// Get <sessionState> configuration element.
-			m_Config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
+			m_config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
 		}
 
 		/// <summary>
@@ -133,14 +133,14 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", s_tableName);
 
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)timeout);
 					dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = timeout;
@@ -219,16 +219,16 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", s_tableName);
 
-					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_Config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_config.Timeout.Minutes);
 					dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
 					
 					NpgsqlTransaction dbTrans = null;
@@ -284,14 +284,14 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", s_tableName);
 
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
 
 					NpgsqlTransaction dbTrans = null;
@@ -347,15 +347,15 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override void ResetItemTimeout(HttpContext context, string id)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
-					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_Config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_config.Timeout.Minutes);
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					NpgsqlTransaction dbTrans = null;
 
@@ -413,7 +413,7 @@ namespace NauckIT.PostgreSQLProvider
 			// Serialize the SessionStateItemCollection as a string
 			string serializedItems = Serialize((SessionStateItemCollection)item.Items);
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand(),
 						delCommand = dbConn.CreateCommand())
@@ -421,16 +421,16 @@ namespace NauckIT.PostgreSQLProvider
 					if (newItem)
 					{
 						// Delete existing expired session if exist
-						delCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+						delCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 						delCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-						delCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						delCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 						// Insert new session data
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", m_TableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", s_tableName);
 
 						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 						dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 						dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)item.Timeout);
 						dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = item.Timeout;
@@ -443,13 +443,13 @@ namespace NauckIT.PostgreSQLProvider
 					else
 					{
 						// Update existing session
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked, \"Data\" = @Data WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", m_TableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked, \"Data\" = @Data WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", s_tableName);
 
 						dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)item.Timeout);
 						dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
 						dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = serializedItems;
 						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 						dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
 					}
 
@@ -532,7 +532,7 @@ namespace NauckIT.PostgreSQLProvider
 			int timeout = 0;
 			string serializedItems = null;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				NpgsqlTransaction dbTrans = null;
 				try
@@ -543,10 +543,10 @@ namespace NauckIT.PostgreSQLProvider
 					// Retrieve the current session item information and lock row
 					using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 					{
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\" FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName FOR UPDATE", m_TableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\" FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName FOR UPDATE", s_tableName);
 
 						dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 						using (NpgsqlDataReader reader = dbCommand.ExecuteReader(System.Data.CommandBehavior.SingleRow))
 						{
@@ -573,9 +573,9 @@ namespace NauckIT.PostgreSQLProvider
 
 					// If the actionFlags parameter is not InitializeItem, deserialize the stored SessionStateItemCollection
 					if (actionFlags == SessionStateActions.InitializeItem)
-						result = CreateNewStoreData(context, m_Config.Timeout.Minutes);
+						result = CreateNewStoreData(context, m_config.Timeout.Minutes);
 					else
-						result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_Config.Timeout.Minutes);
+						result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_config.Timeout.Minutes);
 
 					if (lockRecord)
 					{
@@ -583,14 +583,14 @@ namespace NauckIT.PostgreSQLProvider
 						// Obtain a lock to the record
 						using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 						{
-							dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", m_TableName);
+							dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Locked\" = @Locked, \"LockId\" = @LockId,\"LockDate\" = @LockDate, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 							dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = true;
 							dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = lockId;
 							dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 							dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 0;
 							dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 							dbCommand.ExecuteNonQuery();
 						}
