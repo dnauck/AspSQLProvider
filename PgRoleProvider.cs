@@ -94,7 +94,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <summary>
 		/// RoleProvider.AddUsersToRoles
 		/// </summary>
-		public override void AddUsersToRoles(string[] userNames, string[] roleNames)
+		public override void AddUsersToRoles(string[] usernames, string[] roleNames)
 		{
 			foreach (string rolename in roleNames)
 			{
@@ -104,7 +104,7 @@ namespace NauckIT.PostgreSQLProvider
 				}
 			}
 
-			foreach (string username in userNames)
+			foreach (string username in usernames)
 			{
 				foreach (string rolename in roleNames)
 				{
@@ -134,7 +134,7 @@ namespace NauckIT.PostgreSQLProvider
 
 						using (dbTrans = dbConn.BeginTransaction())
 						{
-							foreach (string username in userNames)
+							foreach (string username in usernames)
 							{
 								foreach (string rolename in roleNames)
 								{
@@ -476,7 +476,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <summary>
 		/// RoleProvider.IsUserInRole
 		/// </summary>
-		public override bool IsUserInRole(string userName, string roleName)
+		public override bool IsUserInRole(string username, string roleName)
 		{
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
 			{
@@ -484,7 +484,7 @@ namespace NauckIT.PostgreSQLProvider
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT COUNT(*) FROM \"{0}\" WHERE \"Username\" = @Username AND \"Rolename\" = @Rolename AND \"ApplicationName\" = @ApplicationName", m_UserInRolesTableName);
 
-					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
+					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@Rolename", NpgsqlDbType.Varchar, 255).Value = roleName;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
