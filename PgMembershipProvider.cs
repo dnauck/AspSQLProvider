@@ -44,9 +44,9 @@ namespace NauckIT.PostgreSQLProvider
 {
 	public class PgMembershipProvider : MembershipProvider
 	{
-		private const string m_TableName = "Users";
+		private const string s_tableName = "Users";
+		private const int s_newPasswordLength = 8;
 		private string m_ConnectionString = string.Empty;
-		private const int m_NewPasswordLength = 8;
 
 		// Used when determining encryption key values.
 		private MachineKeySection m_MachineKey = null;
@@ -222,7 +222,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
 					dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -269,7 +269,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"PasswordQuestion\" = @PasswordQuestion, \"PasswordAnswer\" = @PasswordAnswer WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"PasswordQuestion\" = @PasswordQuestion, \"PasswordAnswer\" = @PasswordAnswer WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = newPasswordQuestion;
 					dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(newPasswordAnswer);
@@ -351,7 +351,7 @@ namespace NauckIT.PostgreSQLProvider
 				{
 					using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 					{
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Username\", \"Password\", \"Email\", \"PasswordQuestion\", \"PasswordAnswer\", \"IsApproved\", \"CreationDate\", \"LastPasswordChangedDate\", \"LastActivityDate\", \"ApplicationName\", \"IsLockedOut\", \"LastLockedOutDate\", \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\") Values (@pId, @Username, @Password, @Email, @PasswordQuestion, @PasswordAnswer, @IsApproved, @CreationDate, @LastPasswordChangedDate, @LastActivityDate, @ApplicationName, @IsLockedOut, @LastLockedOutDate, @FailedPasswordAttemptCount, @FailedPasswordAttemptWindowStart, @FailedPasswordAnswerAttemptCount, @FailedPasswordAnswerAttemptWindowStart)", m_TableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Username\", \"Password\", \"Email\", \"PasswordQuestion\", \"PasswordAnswer\", \"IsApproved\", \"CreationDate\", \"LastPasswordChangedDate\", \"LastActivityDate\", \"ApplicationName\", \"IsLockedOut\", \"LastLockedOutDate\", \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\") Values (@pId, @Username, @Password, @Email, @PasswordQuestion, @PasswordAnswer, @IsApproved, @CreationDate, @LastPasswordChangedDate, @LastActivityDate, @ApplicationName, @IsLockedOut, @LastLockedOutDate, @FailedPasswordAttemptCount, @FailedPasswordAttemptWindowStart, @FailedPasswordAnswerAttemptCount, @FailedPasswordAnswerAttemptWindowStart)", s_tableName);
 
 						dbCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36).Value = providerUserKey;
 						dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
@@ -419,7 +419,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -472,7 +472,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -502,7 +502,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Fetch user from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -556,7 +556,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -586,7 +586,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Fetch user from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -636,7 +636,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 
@@ -665,7 +665,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Fetch user from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 					
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
 					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
@@ -715,7 +715,7 @@ namespace NauckIT.PostgreSQLProvider
 					TimeSpan onlineSpan = new TimeSpan(0, System.Web.Security.Membership.UserIsOnlineTimeWindow, 0);
 					DateTime compareTime = DateTime.Now.Subtract(onlineSpan);
 
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"LastActivityDate\" > @CompareTime AND  \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"LastActivityDate\" > @CompareTime AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@CompareTime", NpgsqlDbType.TimestampTZ, 255).Value = compareTime;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -762,7 +762,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -832,7 +832,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -854,7 +854,7 @@ namespace NauckIT.PostgreSQLProvider
 									// Update user online status
 									using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
 									{
-										dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", m_TableName);
+										dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", s_tableName);
 
 										dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 										dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
@@ -894,7 +894,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"pId\" = @pId", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"pId\" = @pId", s_tableName);
 
 					dbCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = providerUserKey;
 
@@ -915,7 +915,7 @@ namespace NauckIT.PostgreSQLProvider
 									// Update user online status
 									using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
 									{
-										dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", m_TableName);
+										dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"pId\" = @pId", s_tableName);
 
 										dbUpdateCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 										dbUpdateCommand.Parameters.Add("@pId", NpgsqlDbType.Char, 36).Value = u.ProviderUserKey;
@@ -955,7 +955,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Username\" FROM \"{0}\" WHERE \"Email\" = @Email AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Username\" FROM \"{0}\" WHERE \"Email\" = @Email AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -1000,7 +1000,7 @@ namespace NauckIT.PostgreSQLProvider
 				throw new ProviderException(Properties.Resources.ErrPasswordAnswerRequired);
 			}
 
-			string newPassword = Membership.GeneratePassword(m_NewPasswordLength, m_MinRequiredNonAlphanumericCharacters);
+			string newPassword = Membership.GeneratePassword(s_newPasswordLength, m_MinRequiredNonAlphanumericCharacters);
 
 
 			ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
@@ -1021,7 +1021,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -1063,7 +1063,7 @@ namespace NauckIT.PostgreSQLProvider
 						// Reset Password
 						using (NpgsqlCommand dbUpdateCommand = dbConn.CreateCommand())
 						{
-							dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", m_TableName);
+							dbUpdateCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Password\" = @Password, \"LastPasswordChangedDate\" = @LastPasswordChangedDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", s_tableName);
 
 							dbUpdateCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
 							dbUpdateCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -1108,7 +1108,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE  \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE  \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 					dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -1151,7 +1151,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE  \"{0}\" SET \"Email\" = @Email, \"Comment\" = @Comment, \"IsApproved\" = @IsApproved WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE  \"{0}\" SET \"Email\" = @Email, \"Comment\" = @Comment, \"IsApproved\" = @IsApproved WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = user.Email;
 					dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar,255).Value = user.Comment;
@@ -1193,7 +1193,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Fetch user data from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"IsApproved\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"IsApproved\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -1237,7 +1237,7 @@ namespace NauckIT.PostgreSQLProvider
 						// Update last login date
 						using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 						{
-							dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastLoginDate\" = @LastLoginDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+							dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastLoginDate\" = @LastLoginDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 							dbCommand.Parameters.Add("@LastLoginDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 							dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
@@ -1483,7 +1483,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Fetch user data from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
@@ -1538,11 +1538,11 @@ namespace NauckIT.PostgreSQLProvider
 
 							if (failType.Equals(FailureType.Password))
 							{
-								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count, \"FailedPasswordAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count, \"FailedPasswordAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 							}
 							else if (failType.Equals(FailureType.PasswordAnswer))
 							{
-								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count, \"FailedPasswordAnswerAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count, \"FailedPasswordAnswerAttemptWindowStart\" = @WindowStart WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 							}
 
 							dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = 1;
@@ -1561,7 +1561,7 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								// Password attempts have exceeded the failure threshold. Lock out
 								// the user.
-								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+								dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"IsLockedOut\" = @IsLockedOut, \"LastLockedOutDate\" = @LastLockedOutDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 								dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = true;
 								dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -1577,11 +1577,11 @@ namespace NauckIT.PostgreSQLProvider
 								// the failure counts. Leave the window the same.
 								if (failType.Equals(FailureType.Password))
 								{
-									dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+									dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 								}
 								else if (failType.Equals(FailureType.PasswordAnswer))
 								{
-									dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_TableName);
+									dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"FailedPasswordAnswerAttemptCount\" = @Count WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 								}
 
 								dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = failureCount;
