@@ -53,7 +53,7 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			// Initialize values from web.config.
 			if (config == null)
-				throw new ArgumentNullException("Config", Properties.Resources.ErrArgumentNull);
+				throw new ArgumentNullException("config", Properties.Resources.ErrArgumentNull);
 
 			if (string.IsNullOrEmpty(name))
 				name = Properties.Resources.RoleProviderDefaultName;
