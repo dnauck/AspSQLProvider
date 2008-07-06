@@ -88,7 +88,7 @@ namespace NauckIT.PostgreSQLProvider.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cannot unencode a hashed password..
+        ///   Looks up a localized string similar to Cannot decode a hashed password..
         /// </summary>
         internal static string ErrCantDecodeHashedPw {
             get {

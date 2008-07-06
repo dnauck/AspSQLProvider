@@ -127,7 +127,7 @@
     <value>Hashed or Encrypted passwords are not supported with auto-generated keys.</value>
   </data>
   <data name="ErrCantDecodeHashedPw" xml:space="preserve">
-    <value>Cannot unencode a hashed password.</value>
+    <value>Cannot decode a hashed password.</value>
   </data>
   <data name="ErrCantDeletePopulatedRole" xml:space="preserve">
     <value>Cannot delete a populated role.</value>
