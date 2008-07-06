@@ -666,7 +666,7 @@ namespace NauckIT.PostgreSQLProvider
 					catch (NpgsqlException e)
 					{
 						Trace.WriteLine(e.ToString());
-						throw e;
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 					finally
 					{
