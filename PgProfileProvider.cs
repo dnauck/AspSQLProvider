@@ -42,10 +42,10 @@ namespace NauckIT.PostgreSQLProvider
 {
 	public class PgProfileProvider : ProfileProvider
 	{
-		private const string m_ProfilesTableName = "Profiles";
-		private const string m_ProfileDataTableName = "ProfileData";
-		private string m_ConnectionString = string.Empty;
-		private const string m_serializationNamespace = "http://schemas.nauck-it.de/PostgreSQLProvider/1.0/";
+		private const string s_profilesTableName = "Profiles";
+		private const string m_profileDataTableName = "ProfileData";
+		private const string s_serializationNamespace = "http://schemas.nauck-it.de/PostgreSQLProvider/1.0/";
+		private string m_connectionString = string.Empty;
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -68,22 +68,22 @@ namespace NauckIT.PostgreSQLProvider
 			// Initialize the abstract base class.
 			base.Initialize(name, config);
 
-			m_ApplicationName = PgMembershipProvider.GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+			m_applicationName = PgMembershipProvider.GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
 			// Get connection string.
-			m_ConnectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
+			m_connectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
 		}
 
 		/// <summary>
 		/// System.Web.Profile.ProfileProvider properties.
 		/// </summary>
 		#region System.Web.Security.ProfileProvider properties
-		private string m_ApplicationName = string.Empty;
+		private string m_applicationName = string.Empty;
 
 		public override string ApplicationName
 		{
-			get { return m_ApplicationName; }
-			set { m_ApplicationName = value; }
+			get { return m_applicationName; }
+			set { m_applicationName = value; }
 		}
 		#endregion
 
@@ -151,14 +151,14 @@ namespace NauckIT.PostgreSQLProvider
 			bool isAuthenticated = (bool)context["IsAuthenticated"];
 			Dictionary<string, object> databaseResult = new Dictionary<string, object>();
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Name\", \"ValueString\", \"ValueBinary\" FROM \"{0}\" WHERE \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_ProfileDataTableName, m_ProfilesTableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Name\", \"ValueString\", \"ValueBinary\" FROM \"{0}\" WHERE \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_profileDataTableName, s_profilesTableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 
 					try
@@ -211,7 +211,7 @@ namespace NauckIT.PostgreSQLProvider
 						itemValue.PropertyValue = SerializationHelper.DeserializeFromBase64<object>((string)databaseResult[item.Name]);
 
 					else if (item.SerializeAs == SettingsSerializeAs.Xml)
-						itemValue.PropertyValue = SerializationHelper.DeserializeFromXml<object>((string)databaseResult[item.Name], m_serializationNamespace);
+						itemValue.PropertyValue = SerializationHelper.DeserializeFromXml<object>((string)databaseResult[item.Name], s_serializationNamespace);
 
 					else if (item.SerializeAs == SettingsSerializeAs.Binary)
 						itemValue.PropertyValue = SerializationHelper.DeserializeFromBinary<object>((byte[])databaseResult[item.Name]);
@@ -239,20 +239,20 @@ namespace NauckIT.PostgreSQLProvider
 			if (!ProfileExists(username))
 				CreateProfileForUser(username, isAuthenticated);
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand deleteCommand = dbConn.CreateCommand(),
 					insertCommand = dbConn.CreateCommand())
 				{
-					deleteCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Name\" = @Name AND \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_ProfileDataTableName, m_ProfilesTableName);
+					deleteCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Name\" = @Name AND \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_profileDataTableName, s_profilesTableName);
 
 					deleteCommand.Parameters.Add("@Name", NpgsqlDbType.Varchar, 255);
 					deleteCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					deleteCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					deleteCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					deleteCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 
 
-					insertCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Profile\", \"Name\", \"ValueString\", \"ValueBinary\") VALUES (@pId, (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated), @Name, @ValueString, @ValueBinary)", m_ProfileDataTableName, m_ProfilesTableName);
+					insertCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Profile\", \"Name\", \"ValueString\", \"ValueBinary\") VALUES (@pId, (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated), @Name, @ValueString, @ValueBinary)", m_profileDataTableName, s_profilesTableName);
 
 					insertCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36);
 					insertCommand.Parameters.Add("@Name", NpgsqlDbType.Varchar, 255);
@@ -261,7 +261,7 @@ namespace NauckIT.PostgreSQLProvider
 					insertCommand.Parameters.Add("@ValueBinary", NpgsqlDbType.Bytea);
 					insertCommand.Parameters["@ValueBinary"].IsNullable = true;
 					insertCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					insertCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					insertCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					insertCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 
 					NpgsqlTransaction dbTrans = null;
@@ -292,7 +292,7 @@ namespace NauckIT.PostgreSQLProvider
 								}
 								else if (item.Property.SerializeAs == SettingsSerializeAs.Xml)
 								{
-									item.SerializedValue = SerializationHelper.SerializeToXml<object>(item.PropertyValue, m_serializationNamespace);
+									item.SerializedValue = SerializationHelper.SerializeToXml<object>(item.PropertyValue, s_serializationNamespace);
 									insertCommand.Parameters["@ValueString"].Value = item.SerializedValue;
 									insertCommand.Parameters["@ValueBinary"].Value = DBNull.Value;
 								}
@@ -353,15 +353,15 @@ namespace NauckIT.PostgreSQLProvider
 			if (ProfileExists(username))
 				throw new ProviderException(string.Format(CultureInfo.InvariantCulture, Properties.Resources.ErrProfileAlreadyExist, username));
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Username\", \"ApplicationName\", \"IsAnonymous\", \"LastActivityDate\", \"LastUpdatedDate\") Values (@pId, @Username, @ApplicationName, @IsAuthenticated, @LastActivityDate, @LastUpdatedDate)", m_ProfilesTableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Username\", \"ApplicationName\", \"IsAnonymous\", \"LastActivityDate\", \"LastUpdatedDate\") Values (@pId, @Username, @ApplicationName, @IsAuthenticated, @LastActivityDate, @LastUpdatedDate)", s_profilesTableName);
 
 					dbCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36).Value = Guid.NewGuid().ToString();
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 					dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
@@ -390,14 +390,14 @@ namespace NauckIT.PostgreSQLProvider
 
 		private bool ProfileExists(string username)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT COUNT(*) FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", m_ProfilesTableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT COUNT(*) FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_profilesTableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -436,26 +436,26 @@ namespace NauckIT.PostgreSQLProvider
 		/// <param name="activityOnly"></param>
 		private void UpdateActivityDates(string username, bool isAuthenticated, bool activityOnly)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					if (activityOnly)
 					{
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", m_ProfilesTableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", s_profilesTableName);
 
 						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					}
 					else
 					{
-						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate, \"LastUpdatedDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", m_ProfilesTableName);
+						dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"LastActivityDate\" = @LastActivityDate, \"LastUpdatedDate\" = @LastActivityDate WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated", s_profilesTableName);
 
 						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 						//dbCommand.Parameters.Add("@LastUpdatedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					}
 					
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 
 					try
