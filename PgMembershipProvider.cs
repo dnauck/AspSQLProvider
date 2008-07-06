@@ -482,7 +482,8 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+						if (!Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords))
+							return users;
 
 						if (totalRecords <= 0) { return users; }
 					}
@@ -565,7 +566,8 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+						if (!Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords))
+							return users;
 
 						if (totalRecords <= 0) { return users; }
 					}
@@ -643,7 +645,8 @@ namespace NauckIT.PostgreSQLProvider
 						dbConn.Open();
 						dbCommand.Prepare();
 
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords);
+						if (!Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out totalRecords))
+							return users;
 
 						if (totalRecords <= 0) { return users; }
 					}
