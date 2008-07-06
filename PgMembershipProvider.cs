@@ -46,10 +46,10 @@ namespace NauckIT.PostgreSQLProvider
 	{
 		private const string s_tableName = "Users";
 		private const int s_newPasswordLength = 8;
-		private string m_ConnectionString = string.Empty;
+		private string m_connectionString = string.Empty;
 
 		// Used when determining encryption key values.
-		private MachineKeySection m_MachineKey = null;
+		private MachineKeySection m_machineKeyConfig = null;
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method.
@@ -72,47 +72,47 @@ namespace NauckIT.PostgreSQLProvider
 			// Initialize the abstract base class.
 			base.Initialize(name, config);
 
-			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
-			m_MaxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"), CultureInfo.InvariantCulture);
-			m_PasswordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"), CultureInfo.InvariantCulture);
-			m_MinRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphanumericCharacters"], "1"), CultureInfo.InvariantCulture);
-			m_MinRequiredPasswordLength = Convert.ToInt32(GetConfigValue(config["minRequiredPasswordLength"], "7"), CultureInfo.InvariantCulture);
-			m_PasswordStrengthRegularExpression = GetConfigValue(config["passwordStrengthRegularExpression"], "");
-			m_EnablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"), CultureInfo.InvariantCulture);
-			m_EnablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "true"), CultureInfo.InvariantCulture);
-			m_RequiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"), CultureInfo.InvariantCulture);
-			m_RequiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"), CultureInfo.InvariantCulture);
+			m_applicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+			m_maxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"), CultureInfo.InvariantCulture);
+			m_passwordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"), CultureInfo.InvariantCulture);
+			m_minRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphanumericCharacters"], "1"), CultureInfo.InvariantCulture);
+			m_minRequiredPasswordLength = Convert.ToInt32(GetConfigValue(config["minRequiredPasswordLength"], "7"), CultureInfo.InvariantCulture);
+			m_passwordStrengthRegularExpression = GetConfigValue(config["passwordStrengthRegularExpression"], "");
+			m_enablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"), CultureInfo.InvariantCulture);
+			m_enablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "true"), CultureInfo.InvariantCulture);
+			m_requiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"), CultureInfo.InvariantCulture);
+			m_requiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"), CultureInfo.InvariantCulture);
 
 			// Get password encryption type.
 			string pwFormat = GetConfigValue(config["passwordFormat"], "Hashed");
 			switch (pwFormat)
 			{
 				case "Hashed":
-					m_PasswordFormat = MembershipPasswordFormat.Hashed;
+					m_passwordFormat = MembershipPasswordFormat.Hashed;
 					break;
 				case "Encrypted":
-					m_PasswordFormat = MembershipPasswordFormat.Encrypted;
+					m_passwordFormat = MembershipPasswordFormat.Encrypted;
 					break;
 				case "Clear":
-					m_PasswordFormat = MembershipPasswordFormat.Clear;
+					m_passwordFormat = MembershipPasswordFormat.Clear;
 					break;
 				default:
 					throw new ProviderException(Properties.Resources.ErrPwFormatNotSupported);
 			}
 
 			// Get connection string.
-			m_ConnectionString = GetConnectionString(config["connectionStringName"]);
+			m_connectionString = GetConnectionString(config["connectionStringName"]);
 
 			// Get encryption and decryption key information from the configuration.
 			Configuration cfg = WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath);
-			m_MachineKey = (MachineKeySection)cfg.GetSection("system.web/machineKey");
+			m_machineKeyConfig = (MachineKeySection)cfg.GetSection("system.web/machineKey");
 
-			if (!m_PasswordFormat.Equals(MembershipPasswordFormat.Clear))
+			if (!m_passwordFormat.Equals(MembershipPasswordFormat.Clear))
 			{
-				if (m_MachineKey == null)
+				if (m_machineKeyConfig == null)
 					throw new ProviderException(string.Format(CultureInfo.InvariantCulture, Properties.Resources.ErrConfigSectionNotFound, "system.web/machineKey"));
 
-				if (m_MachineKey.ValidationKey.Contains("AutoGenerate"))
+				if (m_machineKeyConfig.ValidationKey.Contains("AutoGenerate"))
 					throw new ProviderException(Properties.Resources.ErrAutoGeneratedKeyNotSupported);
 			}
 		}
@@ -121,72 +121,72 @@ namespace NauckIT.PostgreSQLProvider
 		/// System.Web.Security.MembershipProvider properties.
 		/// </summary>
 		#region System.Web.Security.MembershipProvider properties
-		private string m_ApplicationName = string.Empty;
-		private bool m_EnablePasswordReset = false;
-		private bool m_EnablePasswordRetrieval = false;
-		private bool m_RequiresQuestionAndAnswer = false;
-		private bool m_RequiresUniqueEmail = false;
-		private int m_MaxInvalidPasswordAttempts = 0;
-		private int m_PasswordAttemptWindow = 0;
-		private MembershipPasswordFormat m_PasswordFormat = MembershipPasswordFormat.Clear;
-		private int m_MinRequiredNonAlphanumericCharacters = 0;
-		private int m_MinRequiredPasswordLength = 0;
-		private string m_PasswordStrengthRegularExpression = string.Empty;
+		private string m_applicationName = string.Empty;
+		private bool m_enablePasswordReset = false;
+		private bool m_enablePasswordRetrieval = false;
+		private bool m_requiresQuestionAndAnswer = false;
+		private bool m_requiresUniqueEmail = false;
+		private int m_maxInvalidPasswordAttempts = 0;
+		private int m_passwordAttemptWindow = 0;
+		private MembershipPasswordFormat m_passwordFormat = MembershipPasswordFormat.Clear;
+		private int m_minRequiredNonAlphanumericCharacters = 0;
+		private int m_minRequiredPasswordLength = 0;
+		private string m_passwordStrengthRegularExpression = string.Empty;
 
 		public override string ApplicationName
 		{
-			get { return m_ApplicationName; }
-			set { m_ApplicationName = value; }
+			get { return m_applicationName; }
+			set { m_applicationName = value; }
 		}
 
 		public override bool EnablePasswordReset
 		{
-			get { return m_EnablePasswordReset; }
+			get { return m_enablePasswordReset; }
 		}
 
 		public override bool EnablePasswordRetrieval
 		{
-			get { return m_EnablePasswordRetrieval; }
+			get { return m_enablePasswordRetrieval; }
 		}
 
 		public override bool RequiresQuestionAndAnswer
 		{
-			get { return m_RequiresQuestionAndAnswer; }
+			get { return m_requiresQuestionAndAnswer; }
 		}
 
 		public override bool RequiresUniqueEmail
 		{
-			get { return m_RequiresUniqueEmail; }
+			get { return m_requiresUniqueEmail; }
 		}
 
 		public override int MaxInvalidPasswordAttempts
 		{
-			get { return m_MaxInvalidPasswordAttempts; }
+			get { return m_maxInvalidPasswordAttempts; }
 		}
 
 		public override int PasswordAttemptWindow
 		{
-			get { return m_PasswordAttemptWindow; }
+			get { return m_passwordAttemptWindow; }
 		}
 
 		public override MembershipPasswordFormat PasswordFormat
 		{
-			get { return m_PasswordFormat; }
+			get { return m_passwordFormat; }
 		}
 
 		public override int MinRequiredNonAlphanumericCharacters
 		{
-			get { return m_MinRequiredNonAlphanumericCharacters; }
+			get { return m_minRequiredNonAlphanumericCharacters; }
 		}
 
 		public override int MinRequiredPasswordLength
 		{
-			get { return m_MinRequiredPasswordLength; }
+			get { return m_minRequiredPasswordLength; }
 		}
 
 		public override string PasswordStrengthRegularExpression
 		{
-			get { return m_PasswordStrengthRegularExpression; }
+			get { return m_passwordStrengthRegularExpression; }
 		}
 		#endregion
 
@@ -218,7 +218,7 @@ namespace NauckIT.PostgreSQLProvider
 
 			int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -227,7 +227,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
 					dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -265,7 +265,7 @@ namespace NauckIT.PostgreSQLProvider
 
 			int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -274,7 +274,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@PasswordQuestion", NpgsqlDbType.Varchar, 255).Value = newPasswordQuestion;
 					dbCommand.Parameters.Add("@PasswordAnswer", NpgsqlDbType.Varchar, 255).Value = EncodePassword(newPasswordAnswer);
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -347,7 +347,7 @@ namespace NauckIT.PostgreSQLProvider
 				}
 				
 				// Create user in database
-				using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+				using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 				{
 					using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 					{
@@ -363,7 +363,7 @@ namespace NauckIT.PostgreSQLProvider
 						dbCommand.Parameters.Add("@CreationDate", NpgsqlDbType.TimestampTZ).Value = createDate;
 						dbCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = createDate;
 						dbCommand.Parameters.Add("@LastActivityDate", NpgsqlDbType.TimestampTZ).Value = createDate;
-						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+						dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 						dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 						dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = createDate;
 						dbCommand.Parameters.Add("@FailedPasswordAttemptCount", NpgsqlDbType.Integer).Value = 0;
@@ -415,14 +415,14 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Username\" = @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -467,7 +467,7 @@ namespace NauckIT.PostgreSQLProvider
 			emailToMatch = emailToMatch.Replace('*','%');
 			emailToMatch = emailToMatch.Replace('?', '_');
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
@@ -475,7 +475,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -505,7 +505,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Email\" ILIKE @Email AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = emailToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
 					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
@@ -551,7 +551,7 @@ namespace NauckIT.PostgreSQLProvider
 			usernameToMatch = usernameToMatch.Replace('*', '%');
 			usernameToMatch = usernameToMatch.Replace('?', '_');
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
@@ -559,7 +559,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -589,7 +589,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" ILIKE @Username AND \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = usernameToMatch;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
 					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
@@ -631,14 +631,14 @@ namespace NauckIT.PostgreSQLProvider
 			totalRecords = 0;
 			MembershipUserCollection users = new MembershipUserCollection();
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				// Get user count
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName", s_tableName);
 
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -667,7 +667,7 @@ namespace NauckIT.PostgreSQLProvider
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"ApplicationName\" = @ApplicationName ORDER BY \"Username\" ASC LIMIT @MaxCount OFFSET @StartIndex", s_tableName);
 					
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@MaxCount", NpgsqlDbType.Integer).Value = pageSize;
 					dbCommand.Parameters.Add("@StartIndex", NpgsqlDbType.Integer).Value = pageSize * pageIndex;
 
@@ -708,7 +708,7 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			int numOnline = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -718,7 +718,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT Count(*) FROM \"{0}\" WHERE \"LastActivityDate\" > @CompareTime AND  \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@CompareTime", NpgsqlDbType.TimestampTZ, 255).Value = compareTime;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -758,14 +758,14 @@ namespace NauckIT.PostgreSQLProvider
 				throw new ProviderException(Properties.Resources.ErrCantRetrieveHashedPw);
 			}
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -787,14 +787,14 @@ namespace NauckIT.PostgreSQLProvider
 								if (isLockedOut)
 									throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
 
-								if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
+								if (m_requiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
 								{
 									UpdateFailureCount(username, FailureType.PasswordAnswer);
 
 									throw new MembershipPasswordException(Properties.Resources.ErrIncorrectPasswordAnswer);
 								}
 
-								if (m_PasswordFormat == MembershipPasswordFormat.Encrypted)
+								if (m_passwordFormat == MembershipPasswordFormat.Encrypted)
 								{
 									password = UnEncodePassword(password);
 								}
@@ -828,14 +828,14 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			MembershipUser u = null;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"pId\", \"Username\", \"Email\", \"PasswordQuestion\", \"Comment\", \"IsApproved\", \"IsLockedOut\", \"CreationDate\", \"LastLoginDate\", \"LastActivityDate\", \"LastPasswordChangedDate\", \"LastLockedOutDate\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -890,7 +890,7 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			MembershipUser u = null;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -951,14 +951,14 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			string username = string.Empty;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Username\" FROM \"{0}\" WHERE \"Email\" = @Email AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Email", NpgsqlDbType.Varchar, 128).Value = email;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -988,19 +988,19 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override string ResetPassword(string username, string answer)
 		{
-			if (!m_EnablePasswordReset)
+			if (!m_enablePasswordReset)
 			{
 				throw new NotSupportedException(Properties.Resources.ErrPasswordResetNotEnabled);
 			}
 
-			if (string.IsNullOrEmpty(answer) && m_RequiresQuestionAndAnswer)
+			if (string.IsNullOrEmpty(answer) && m_requiresQuestionAndAnswer)
 			{
 				UpdateFailureCount(username, FailureType.PasswordAnswer);
 
 				throw new ProviderException(Properties.Resources.ErrPasswordAnswerRequired);
 			}
 
-			string newPassword = Membership.GeneratePassword(s_newPasswordLength, m_MinRequiredNonAlphanumericCharacters);
+			string newPassword = Membership.GeneratePassword(s_newPasswordLength, m_minRequiredNonAlphanumericCharacters);
 
 
 			ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, true);
@@ -1017,14 +1017,14 @@ namespace NauckIT.PostgreSQLProvider
 
 			int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"PasswordAnswer\", \"IsLockedOut\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -1047,7 +1047,7 @@ namespace NauckIT.PostgreSQLProvider
 								if (isLockedOut)
 									throw new MembershipPasswordException(Properties.Resources.ErrUserIsLoggedOut);
 
-								if (m_RequiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
+								if (m_requiresQuestionAndAnswer && !CheckPassword(answer, passwordAnswer))
 								{
 									UpdateFailureCount(username, FailureType.PasswordAnswer);
 
@@ -1068,7 +1068,7 @@ namespace NauckIT.PostgreSQLProvider
 							dbUpdateCommand.Parameters.Add("@Password", NpgsqlDbType.Varchar, 128).Value = EncodePassword(newPassword);
 							dbUpdateCommand.Parameters.Add("@LastPasswordChangedDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 							dbUpdateCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-							dbUpdateCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+							dbUpdateCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 							dbUpdateCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 
 							dbUpdateCommand.Prepare();
@@ -1104,7 +1104,7 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			int rowsAffected = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -1113,7 +1113,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 					dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = userName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -1147,7 +1147,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override void UpdateUser(MembershipUser user)
 		{
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
@@ -1157,7 +1157,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@Comment", NpgsqlDbType.Varchar,255).Value = user.Comment;
 					dbCommand.Parameters.Add("@IsApproved", NpgsqlDbType.Boolean).Value = user.IsApproved;
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = user.UserName;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -1188,7 +1188,7 @@ namespace NauckIT.PostgreSQLProvider
 			string dbPassword = string.Empty;
 			bool dbIsApproved = false;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				// Fetch user data from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
@@ -1196,7 +1196,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Password\", \"IsApproved\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsLockedOut\" = @IsLockedOut", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 					dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = false;
 
 					try
@@ -1241,7 +1241,7 @@ namespace NauckIT.PostgreSQLProvider
 
 							dbCommand.Parameters.Add("@LastLoginDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 							dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 							try
 							{
@@ -1413,7 +1413,7 @@ namespace NauckIT.PostgreSQLProvider
 
 				case MembershipPasswordFormat.Hashed:
 					HMACSHA1 hash = new HMACSHA1();
-					hash.Key = HexToByte(m_MachineKey.ValidationKey);
+					hash.Key = HexToByte(m_machineKeyConfig.ValidationKey);
 					encodedPassword = Convert.ToBase64String(hash.ComputeHash(Encoding.Unicode.GetBytes(password)));
 					break;
 
@@ -1478,7 +1478,7 @@ namespace NauckIT.PostgreSQLProvider
 			DateTime windowStart = new DateTime();
 			int failureCount = 0;
 
-			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_ConnectionString))
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
 				// Fetch user data from database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
@@ -1486,7 +1486,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"FailedPasswordAttemptCount\", \"FailedPasswordAttemptWindowStart\", \"FailedPasswordAnswerAttemptCount\", \"FailedPasswordAnswerAttemptWindowStart\" FROM \"{0}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					try
 					{
@@ -1527,7 +1527,7 @@ namespace NauckIT.PostgreSQLProvider
 				// Calculate failture count and update database
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					DateTime windowEnd = windowStart.AddMinutes(m_PasswordAttemptWindow);
+					DateTime windowEnd = windowStart.AddMinutes(m_passwordAttemptWindow);
 
 					try
 					{
@@ -1548,7 +1548,7 @@ namespace NauckIT.PostgreSQLProvider
 							dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = 1;
 							dbCommand.Parameters.Add("@WindowStart", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 							dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+							dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 							if (dbCommand.ExecuteNonQuery() < 0)
 								throw new ProviderException(Properties.Resources.ErrCantUpdateFailtureCountAndWindowStart);
@@ -1557,7 +1557,7 @@ namespace NauckIT.PostgreSQLProvider
 						{
 							failureCount++;
 
-							if (failureCount >= m_MaxInvalidPasswordAttempts)
+							if (failureCount >= m_maxInvalidPasswordAttempts)
 							{
 								// Password attempts have exceeded the failure threshold. Lock out
 								// the user.
@@ -1566,7 +1566,7 @@ namespace NauckIT.PostgreSQLProvider
 								dbCommand.Parameters.Add("@IsLockedOut", NpgsqlDbType.Boolean).Value = true;
 								dbCommand.Parameters.Add("@LastLockedOutDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
 								dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 								if (dbCommand.ExecuteNonQuery() < 0)
 									throw new ProviderException(string.Format(CultureInfo.InvariantCulture, Properties.Resources.ErrCantLogoutUser, username));
@@ -1586,7 +1586,7 @@ namespace NauckIT.PostgreSQLProvider
 
 								dbCommand.Parameters.Add("@Count", NpgsqlDbType.Integer).Value = failureCount;
 								dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
-								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_ApplicationName;
+								dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 								if (dbCommand.ExecuteNonQuery() < 0)
 									throw new ProviderException(Properties.Resources.ErrCantUpdateFailtureCount);
