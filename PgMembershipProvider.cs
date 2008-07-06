@@ -1453,7 +1453,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		/// <param name="hexString"></param>
 		/// <returns></returns>
-		private byte[] HexToByte(string hexString)
+		private static byte[] HexToByte(string hexString)
 		{
 			byte[] returnBytes = new byte[hexString.Length / 2];
 			for (int i = 0; i < returnBytes.Length; i++)
