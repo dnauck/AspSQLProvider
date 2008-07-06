@@ -72,26 +72,10 @@ namespace NauckIT.PostgreSQLProvider
 			// Initialize the abstract base class.
 			base.Initialize(name, config);
 
-			m_applicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+			m_applicationName = PgMembershipProvider.GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
 			// Get connection string.
-			string connStrName = config["connectionStringName"];
-
-			if (string.IsNullOrEmpty(connStrName))
-			{
-				throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
-			}
-			else
-			{
-				ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
-
-				if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
-				{
-					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
-				}
-
-				m_connectionString = ConnectionStringSettings.ConnectionString;
-			}
+			m_connectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
 
 			// Get <sessionState> configuration element.
 			m_config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
@@ -676,20 +660,6 @@ namespace NauckIT.PostgreSQLProvider
 			}
 
 			return sessionItems;
-		}
-
-		/// <summary>
-		/// A helper function to retrieve config values from the configuration file.
-		/// </summary>
-		/// <param name="configValue"></param>
-		/// <param name="defaultValue"></param>
-		/// <returns></returns>
-		private string GetConfigValue(string configValue, string defaultValue)
-		{
-			if (string.IsNullOrEmpty(configValue))
-				return defaultValue;
-
-			return configValue;
 		}
 		#endregion
 	}
