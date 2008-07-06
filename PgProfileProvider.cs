@@ -113,42 +113,42 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override int DeleteInactiveProfiles(ProfileAuthenticationOption authenticationOption, DateTime userInactiveSinceDate)
 		{
-			throw new Exception("DeleteInactiveProfiles: The method or operation is not implemented.");
+			throw new NotImplementedException("DeleteInactiveProfiles: The method or operation is not implemented.");
 		}
 
 		public override int DeleteProfiles(string[] usernames)
 		{
-			throw new Exception("DeleteProfiles1: The method or operation is not implemented.");
+			throw new NotImplementedException("DeleteProfiles1: The method or operation is not implemented.");
 		}
 
 		public override int DeleteProfiles(ProfileInfoCollection profiles)
 		{
-			throw new Exception("DeleteProfiles2: The method or operation is not implemented.");
+			throw new NotImplementedException("DeleteProfiles2: The method or operation is not implemented.");
 		}
 
 		public override ProfileInfoCollection FindInactiveProfilesByUserName(ProfileAuthenticationOption authenticationOption, string usernameToMatch, DateTime userInactiveSinceDate, int pageIndex, int pageSize, out int totalRecords)
 		{
-			throw new Exception("FindInactiveProfilesByUserName: The method or operation is not implemented.");
+			throw new NotImplementedException("FindInactiveProfilesByUserName: The method or operation is not implemented.");
 		}
 
 		public override ProfileInfoCollection FindProfilesByUserName(ProfileAuthenticationOption authenticationOption, string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
 		{
-			throw new Exception("FindProfilesByUserName: The method or operation is not implemented.");
+			throw new NotImplementedException("FindProfilesByUserName: The method or operation is not implemented.");
 		}
 
 		public override ProfileInfoCollection GetAllInactiveProfiles(ProfileAuthenticationOption authenticationOption, DateTime userInactiveSinceDate, int pageIndex, int pageSize, out int totalRecords)
 		{
-			throw new Exception("GetAllInactiveProfiles: The method or operation is not implemented.");
+			throw new NotImplementedException("GetAllInactiveProfiles: The method or operation is not implemented.");
 		}
 
 		public override ProfileInfoCollection GetAllProfiles(ProfileAuthenticationOption authenticationOption, int pageIndex, int pageSize, out int totalRecords)
 		{
-			throw new Exception("GetAllProfiles: The method or operation is not implemented.");
+			throw new NotImplementedException("GetAllProfiles: The method or operation is not implemented.");
 		}
 
 		public override int GetNumberOfInactiveProfiles(ProfileAuthenticationOption authenticationOption, DateTime userInactiveSinceDate)
 		{
-			throw new Exception("GetNumberOfInactiveProfiles: The method or operation is not implemented.");
+			throw new NotImplementedException("GetNumberOfInactiveProfiles: The method or operation is not implemented.");
 		}
 		#endregion
 
