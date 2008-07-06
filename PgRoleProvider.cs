@@ -70,23 +70,7 @@ namespace NauckIT.PostgreSQLProvider
 			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
 			// Get connection string.
-			string connStrName = config["connectionStringName"];
-
-			if (string.IsNullOrEmpty(connStrName))
-			{
-				throw new ArgumentOutOfRangeException("ConnectionStringName", Properties.Resources.ErrArgumentNullOrEmpty);
-			}
-			else
-			{
-				ConnectionStringSettings ConnectionStringSettings = ConfigurationManager.ConnectionStrings[connStrName];
-
-				if (ConnectionStringSettings == null || string.IsNullOrEmpty(ConnectionStringSettings.ConnectionString.Trim()))
-				{
-					throw new ProviderException(Properties.Resources.ErrConnectionStringNullOrEmpty);
-				}
-
-				m_ConnectionString = ConnectionStringSettings.ConnectionString;
-			}
+			m_ConnectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
 		}
 
 		/// <summary>
