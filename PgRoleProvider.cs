@@ -494,7 +494,8 @@ namespace NauckIT.PostgreSQLProvider
 						dbCommand.Prepare();
 
 						int numRecs = 0;
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
+						if (!Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs))
+							return false;
 
 						if (numRecs > 0)
 							return true;
@@ -619,7 +620,8 @@ namespace NauckIT.PostgreSQLProvider
 						dbCommand.Prepare();
 
 						int numRecs = 0;
-						Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs);
+						if (!Int32.TryParse(dbCommand.ExecuteScalar().ToString(), out numRecs))
+							return false;
 
 						if (numRecs > 0)
 							return true;
