@@ -47,6 +47,7 @@ namespace NauckIT.PostgreSQLProvider
 	public class PgSessionStateStoreProvider : SessionStateStoreProviderBase
 	{
 		private const string s_tableName = "Sessions";
+		private System.Timers.Timer m_expiredSessionDeletionTimer;
 		private string m_connectionString = string.Empty;
 		private string m_applicationName = string.Empty;
 		private SessionStateSection m_config = null;
@@ -79,6 +80,18 @@ namespace NauckIT.PostgreSQLProvider
 
 			// Get <sessionState> configuration element.
 			m_config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
+
+			// Setup expired session deletion timer
+			bool enableExpiredSessionAutoDeletion = Convert.ToBoolean(PgMembershipProvider.GetConfigValue(config["enableExpiredSessionAutoDeletion"], "false"), CultureInfo.InvariantCulture);
+			double expiredSessionAutoDeletionInterval = Convert.ToDouble(PgMembershipProvider.GetConfigValue(config["expiredSessionAutoDeletionInterval"], "1800000"), CultureInfo.InvariantCulture); //default: 30 minutes
+
+			if (!enableExpiredSessionAutoDeletion)
+				return;
+
+			m_expiredSessionDeletionTimer = new System.Timers.Timer(expiredSessionAutoDeletionInterval);
+			m_expiredSessionDeletionTimer.Elapsed += new System.Timers.ElapsedEventHandler(ExpiredSessionDeletionTimer_Elapsed);
+			m_expiredSessionDeletionTimer.Enabled = true;
+			m_expiredSessionDeletionTimer.AutoReset = true;
 		}
 
 		/// <summary>
@@ -660,6 +673,65 @@ namespace NauckIT.PostgreSQLProvider
 			}
 
 			return sessionItems;
+		}
+
+		private void ExpiredSessionDeletionTimer_Elapsed(object source, System.Timers.ElapsedEventArgs e)
+		{
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
+			{
+				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+				{
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Expires\" < @Expires AND \"ApplicationName\" = @ApplicationName", s_tableName);
+
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
+
+					NpgsqlTransaction dbTrans = null;
+					
+					try
+					{
+						dbConn.Open();
+						dbCommand.Prepare();
+
+						dbTrans = dbConn.BeginTransaction();
+
+						dbCommand.ExecuteNonQuery();
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
+					}
+					catch (Exception ex)
+					{
+						Trace.WriteLine(ex.ToString());
+
+						if (dbTrans != null)
+						{
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (Exception re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
 		}
 		#endregion
 	}
