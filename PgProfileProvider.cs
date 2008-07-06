@@ -43,7 +43,7 @@ namespace NauckIT.PostgreSQLProvider
 	public class PgProfileProvider : ProfileProvider
 	{
 		private const string s_profilesTableName = "Profiles";
-		private const string m_profileDataTableName = "ProfileData";
+		private const string s_profileDataTableName = "ProfileData";
 		private const string s_serializationNamespace = "http://schemas.nauck-it.de/PostgreSQLProvider/1.0/";
 		private string m_connectionString = string.Empty;
 
@@ -155,7 +155,7 @@ namespace NauckIT.PostgreSQLProvider
 			{
 				using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
 				{
-					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Name\", \"ValueString\", \"ValueBinary\" FROM \"{0}\" WHERE \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_profileDataTableName, s_profilesTableName);
+					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"Name\", \"ValueString\", \"ValueBinary\" FROM \"{0}\" WHERE \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", s_profileDataTableName, s_profilesTableName);
 
 					dbCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
@@ -244,7 +244,7 @@ namespace NauckIT.PostgreSQLProvider
 				using (NpgsqlCommand deleteCommand = dbConn.CreateCommand(),
 					insertCommand = dbConn.CreateCommand())
 				{
-					deleteCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Name\" = @Name AND \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", m_profileDataTableName, s_profilesTableName);
+					deleteCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"Name\" = @Name AND \"Profile\" = (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated)", s_profileDataTableName, s_profilesTableName);
 
 					deleteCommand.Parameters.Add("@Name", NpgsqlDbType.Varchar, 255);
 					deleteCommand.Parameters.Add("@Username", NpgsqlDbType.Varchar, 255).Value = username;
@@ -252,7 +252,7 @@ namespace NauckIT.PostgreSQLProvider
 					deleteCommand.Parameters.Add("@IsAuthenticated", NpgsqlDbType.Boolean).Value = !isAuthenticated;
 
 
-					insertCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Profile\", \"Name\", \"ValueString\", \"ValueBinary\") VALUES (@pId, (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated), @Name, @ValueString, @ValueBinary)", m_profileDataTableName, s_profilesTableName);
+					insertCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"pId\", \"Profile\", \"Name\", \"ValueString\", \"ValueBinary\") VALUES (@pId, (SELECT \"pId\" FROM \"{1}\" WHERE \"Username\" = @Username AND \"ApplicationName\" = @ApplicationName AND \"IsAnonymous\" = @IsAuthenticated), @Name, @ValueString, @ValueBinary)", s_profileDataTableName, s_profilesTableName);
 
 					insertCommand.Parameters.Add("@pId", NpgsqlDbType.Varchar, 36);
 					insertCommand.Parameters.Add("@Name", NpgsqlDbType.Varchar, 255);
