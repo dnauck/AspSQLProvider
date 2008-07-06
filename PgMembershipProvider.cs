@@ -1278,7 +1278,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <param name="configValue"></param>
 		/// <param name="defaultValue"></param>
 		/// <returns></returns>
-		private static string GetConfigValue(string configValue, string defaultValue)
+		internal static string GetConfigValue(string configValue, string defaultValue)
 		{
 			if (string.IsNullOrEmpty(configValue))
 				return defaultValue;
@@ -1291,7 +1291,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		/// <param name="connectionStringName">Name of the connection string</param>
 		/// <returns></returns>
-		private static string GetConnectionString(string connectionStringName)
+		internal static string GetConnectionString(string connectionStringName)
 		{
 			if (string.IsNullOrEmpty(connectionStringName))
 				throw new ArgumentException(Properties.Resources.ErrArgumentNullOrEmpty, "connectionStringName");
