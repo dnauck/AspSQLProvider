@@ -621,7 +621,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <summary>
 		/// Convert a SessionStateItemCollection into a Base64 string
 		/// </summary>
-		private string Serialize(SessionStateItemCollection items)
+		private static string Serialize(SessionStateItemCollection items)
 		{
 			if (items == null || items.Count < 1)
 				return string.Empty;
@@ -643,7 +643,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		/// <param name="serializedItems"></param>
 		/// <returns></returns>
-		private SessionStateItemCollection Deserialize(string serializedItems)
+		private static SessionStateItemCollection Deserialize(string serializedItems)
 		{
 			SessionStateItemCollection sessionItems = new SessionStateItemCollection();
 
