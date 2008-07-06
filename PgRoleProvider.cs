@@ -519,7 +519,7 @@ namespace NauckIT.PostgreSQLProvider
 		/// <summary>
 		/// RoleProvider.RemoveUsersFromRoles
 		/// </summary>
-		public override void RemoveUsersFromRoles(string[] userNames, string[] roleNames)
+		public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
 		{
 			foreach (string rolename in roleNames)
 			{
@@ -529,7 +529,7 @@ namespace NauckIT.PostgreSQLProvider
 				}
 			}
 
-			foreach (string username in userNames)
+			foreach (string username in usernames)
 			{
 				foreach (string rolename in roleNames)
 				{
@@ -559,7 +559,7 @@ namespace NauckIT.PostgreSQLProvider
 
 						using (dbTrans = dbConn.BeginTransaction())
 						{
-							foreach (string username in userNames)
+							foreach (string username in usernames)
 							{
 								foreach (string rolename in roleNames)
 								{
