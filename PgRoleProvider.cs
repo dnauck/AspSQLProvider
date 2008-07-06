@@ -67,7 +67,7 @@ namespace NauckIT.PostgreSQLProvider
 			// Initialize the abstract base class.
 			base.Initialize(name, config);
 
-			m_ApplicationName = GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
+			m_ApplicationName = PgMembershipProvider.GetConfigValue(config["applicationName"], HostingEnvironment.ApplicationVirtualPath);
 
 			// Get connection string.
 			m_ConnectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
@@ -638,22 +638,6 @@ namespace NauckIT.PostgreSQLProvider
 			}
 
 			return false;
-		}
-		#endregion
-
-		#region private methods
-		/// <summary>
-		/// A helper function to retrieve config values from the configuration file.
-		/// </summary>
-		/// <param name="configValue"></param>
-		/// <param name="defaultValue"></param>
-		/// <returns></returns>
-		private static string GetConfigValue(string configValue, string defaultValue)
-		{
-			if (string.IsNullOrEmpty(configValue))
-				return defaultValue;
-
-			return configValue;
 		}
 		#endregion	
 	}
