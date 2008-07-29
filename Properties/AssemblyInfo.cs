@@ -39,7 +39,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nauck IT KG")]
 [assembly: AssemblyProduct("PostgreSQL Provider")]
-[assembly: AssemblyCopyright("Copyright © 2006, 2007, 2008 Nauck IT KG")]
+[assembly: AssemblyCopyright("Copyright © 2006 - 2008 Nauck IT KG")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguageAttribute("en")]
@@ -62,5 +62,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion("1.1.5.0")]
+[assembly: AssemblyVersion("1.1.8.0")]
 //[assembly: AssemblyFileVersion("1.0.0.0")]
