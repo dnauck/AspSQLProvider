@@ -848,6 +848,7 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								reader.Read();
 								u = GetUserFromReader(reader);
+								reader.Close();
 
 								if (userIsOnline)
 								{
@@ -909,6 +910,7 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								reader.Read();
 								u = GetUserFromReader(reader);
+								reader.Close();
 
 								if (userIsOnline)
 								{
