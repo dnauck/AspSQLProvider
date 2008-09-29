@@ -222,7 +222,7 @@ namespace NauckIT.PostgreSQLProvider
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires, \"Locked\" = @Locked WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName AND \"LockId\" = @LockId", s_tableName);
 
-					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.Add(m_config.Timeout);
 					dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
@@ -350,7 +350,7 @@ namespace NauckIT.PostgreSQLProvider
 				{
 					dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "UPDATE \"{0}\" SET \"Expires\" = @Expires WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", s_tableName);
 
-					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes(m_config.Timeout.Minutes);
+					dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.Add(m_config.Timeout);
 					dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
