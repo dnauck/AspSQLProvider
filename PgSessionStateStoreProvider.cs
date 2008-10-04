@@ -5,6 +5,7 @@
 //
 // Author:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
+//	C. Akkermans		<>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -51,6 +52,8 @@ namespace NauckIT.PostgreSQLProvider
 		private string m_connectionString = string.Empty;
 		private string m_applicationName = string.Empty;
 		private SessionStateSection m_config = null;
+		private bool m_enableExpireCallback = false;
+		private SessionStateItemExpireCallback m_expireCallback = null;
 
 		/// <summary>
 		/// System.Configuration.Provider.ProviderBase.Initialize Method
@@ -81,12 +84,16 @@ namespace NauckIT.PostgreSQLProvider
 			// Get <sessionState> configuration element.
 			m_config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
 
-			// Setup expired session deletion timer
+			// Should automatic session garbage collection be turned on?
 			bool enableExpiredSessionAutoDeletion = Convert.ToBoolean(PgMembershipProvider.GetConfigValue(config["enableExpiredSessionAutoDeletion"], "false"), CultureInfo.InvariantCulture);
-			double expiredSessionAutoDeletionInterval = Convert.ToDouble(PgMembershipProvider.GetConfigValue(config["expiredSessionAutoDeletionInterval"], "1800000"), CultureInfo.InvariantCulture); //default: 30 minutes
-
+			
 			if (!enableExpiredSessionAutoDeletion)
 				return;
+
+			m_enableExpireCallback = Convert.ToBoolean(PgMembershipProvider.GetConfigValue(config["enableSessionExpireCallback"], "false"), CultureInfo.InvariantCulture);
+
+			// Load session garbage collection configuration and setup garbage collection interval timer
+			double expiredSessionAutoDeletionInterval = Convert.ToDouble(PgMembershipProvider.GetConfigValue(config["expiredSessionAutoDeletionInterval"], "1800000"), CultureInfo.InvariantCulture); //default: 30 minutes
 
 			m_expiredSessionDeletionTimer = new System.Timers.Timer(expiredSessionAutoDeletionInterval);
 			m_expiredSessionDeletionTimer.Elapsed += new System.Timers.ElapsedEventHandler(ExpiredSessionDeletionTimer_Elapsed);
@@ -508,8 +515,15 @@ namespace NauckIT.PostgreSQLProvider
 		/// </summary>
 		public override bool SetItemExpireCallback(SessionStateItemExpireCallback expireCallback)
 		{
-			return false;
+			// Accept and store callback if session expire callback is enabled. If not, return false in order to inform SessionStateModule
+			// the session expire callback is not supported.
+			if (!m_enableExpireCallback)
+				return false;
+
+			m_expireCallback = expireCallback;
+			return true;
 		}
+
 		#endregion
 
 		#region private methods
@@ -675,7 +689,149 @@ namespace NauckIT.PostgreSQLProvider
 			return sessionItems;
 		}
 
+		/// <summary>
+		/// The ExpiredSessionDeletionTimer_Elapsed performs automatic session garbage collection by removing expired sessions from
+		/// the database.
+		/// </summary>
+		/// <param name="source"></param>
+		/// <param name="e"></param>
 		private void ExpiredSessionDeletionTimer_Elapsed(object source, System.Timers.ElapsedEventArgs e)
+		{
+			/*
+			 * Determine mode of session garbage collection. If the session expire callback is disabled
+			 * one may simple delete all expired session from the session table. If however the session expire callback
+			 * is enabled, we need to load the session data for every expired session and invoke the expire callback
+			 * for each of these sessions prior to deletion.
+			 * Also check if an expire call back was actually defined. If m_expireCallback is null we also don't have to take
+			 * the more expensive path where every session is enumerated while there's no real need to do so.
+			 */
+
+			if (m_enableExpireCallback && m_expireCallback != null)
+				InvokeExpireCallbackAndDeleteSession();
+
+			else
+				DeleteExpiredSessionsFromDatabase();
+		}
+
+		/// <summary>
+		/// Load the session data for every expired session and invoke the expire callback
+		/// for each of these sessions prior to deletion.
+		/// </summary>
+		private void InvokeExpireCallbackAndDeleteSession()
+		{
+			Dictionary<string, SessionStateStoreData> expiredSessions = null;
+
+			// Start out by enumerating all expired sessions
+			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
+			{
+				using (NpgsqlCommand selectCommand = dbConn.CreateCommand())
+				{
+					selectCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "SELECT \"SessionId\", \"Data\" FROM \"{0}\" WHERE \"Expires\" < @Expires AND \"ApplicationName\" = @ApplicationName", s_tableName);
+
+					selectCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+					selectCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
+
+					try
+					{
+						dbConn.Open();
+						selectCommand.Prepare();
+
+						using (NpgsqlDataReader reader = selectCommand.ExecuteReader())
+						{
+							if (!reader.HasRows)
+								return;
+
+							expiredSessions = new Dictionary<string, SessionStateStoreData>(reader.RecordsAffected);
+
+							// Get session data from data reader and reconstruct session.
+							// NOTE:	I'm not sure if I should pass any static objects to the constructor of the SessionStateStoreData class.
+							//			Seems to me you should not since garbage collection is say highly unlikely to be run in an actual http context.
+							while (reader.Read())
+							{
+								string sessionId = reader.GetString(0);
+								string serializedItems = reader.IsDBNull(1) ? null : reader.GetString(1);
+
+								expiredSessions.Add(sessionId, new SessionStateStoreData(Deserialize(serializedItems), new HttpStaticObjectsCollection(), Convert.ToInt32(m_config.Timeout.TotalMinutes)));
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						Trace.WriteLine(ex.ToString());
+
+						if (dbConn != null)
+							dbConn.Close();
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+				}
+
+				using (NpgsqlCommand deleteCommand = dbConn.CreateCommand())
+				{
+					deleteCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "DELETE FROM \"{0}\" WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName", s_tableName);
+
+					deleteCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80);
+					deleteCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
+
+					NpgsqlTransaction dbTrans = null;
+
+					try
+					{
+						deleteCommand.Prepare();
+						dbTrans = dbConn.BeginTransaction();
+
+						// Actually invoke session expire callback and delete session from the session table.
+						foreach (KeyValuePair<string, SessionStateStoreData> expiredSession in expiredSessions)
+						{
+							// TODO: use async invocation insted?
+							m_expireCallback.Invoke(expiredSession.Key, expiredSession.Value);
+
+							deleteCommand.Parameters["@SessionId"].Value = expiredSession.Key;
+
+							deleteCommand.ExecuteNonQuery();
+						}
+
+						// Attempt to commit the transaction
+						dbTrans.Commit();
+					}
+					catch (Exception ex)
+					{
+						Trace.WriteLine(ex.ToString());
+
+						if (dbTrans != null)
+						{
+							try
+							{
+								// Attempt to roll back the transaction
+								Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+								dbTrans.Rollback();
+							}
+							catch (Exception re)
+							{
+								// Rollback failed
+								Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+								Trace.WriteLine(re.ToString());
+							}
+						}
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
+					}
+					finally
+					{
+						if (dbTrans != null)
+							dbTrans.Dispose();
+
+						if (dbConn != null)
+							dbConn.Close();
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// Delete all expired session from the session table.
+		/// </summary>
+		private void DeleteExpiredSessionsFromDatabase()
 		{
 			using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
 			{
@@ -687,7 +843,7 @@ namespace NauckIT.PostgreSQLProvider
 					dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
 
 					NpgsqlTransaction dbTrans = null;
-					
+
 					try
 					{
 						dbConn.Open();
@@ -733,6 +889,7 @@ namespace NauckIT.PostgreSQLProvider
 				}
 			}
 		}
+
 		#endregion
 	}
 }
