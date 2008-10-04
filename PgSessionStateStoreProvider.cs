@@ -570,9 +570,9 @@ namespace NauckIT.PostgreSQLProvider
 
 					// If the actionFlags parameter is not InitializeItem, deserialize the stored SessionStateItemCollection
 					if (actionFlags == SessionStateActions.InitializeItem)
-						result = CreateNewStoreData(context, m_config.Timeout.Minutes);
+						result = CreateNewStoreData(context, Convert.ToInt32(m_config.Timeout.TotalMinutes));
 					else
-						result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), m_config.Timeout.Minutes);
+						result = new SessionStateStoreData(Deserialize(serializedItems), SessionStateUtility.GetSessionStaticObjects(context), Convert.ToInt32(m_config.Timeout.TotalMinutes));
 
 					if (lockRecord)
 					{
