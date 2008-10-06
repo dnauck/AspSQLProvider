@@ -3,9 +3,9 @@
 //
 // Copyright © 2007 - 2008 Nauck IT KG		http://www.nauck-it.de
 //
-// Author:
+// Authors:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
-//	C. Akkermans		<>
+//	Christ Akkermans	<c.akkermans(at)vereyon.nl>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
