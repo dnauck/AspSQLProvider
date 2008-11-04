@@ -108,6 +108,13 @@ namespace NauckIT.PostgreSQLProvider
 
 		public override void Dispose()
 		{
+			if (m_expiredSessionDeletionTimer == null)
+				return;
+
+			// cleanup timer
+			m_expiredSessionDeletionTimer.Stop();
+			m_expiredSessionDeletionTimer.Dispose();
+			m_expiredSessionDeletionTimer = null;
 		}
 
 		/// <summary>
