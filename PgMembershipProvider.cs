@@ -1517,12 +1517,11 @@ namespace NauckIT.PostgreSQLProvider
 					catch (NpgsqlException e)
 					{
 						Trace.WriteLine(e.ToString());
-						throw new ProviderException(Properties.Resources.ErrOperationAborted);
-					}
-					finally
-					{
+						
 						if (dbConn != null)
 							dbConn.Close();
+
+						throw new ProviderException(Properties.Resources.ErrOperationAborted);
 					}
 				}
 
