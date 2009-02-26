@@ -1,7 +1,7 @@
 //
 // $Id$
 //
-// Copyright © 2006 - 2008 Nauck IT KG		http://www.nauck-it.de
+// Copyright © 2006 - 2009 Nauck IT KG		http://www.nauck-it.de
 //
 // Author:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
@@ -39,7 +39,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nauck IT KG")]
 [assembly: AssemblyProduct("PostgreSQL Provider")]
-[assembly: AssemblyCopyright("Copyright © 2006 - 2008 Nauck IT KG")]
+[assembly: AssemblyCopyright("Copyright © 2006 - 2009 Nauck IT KG")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguageAttribute("en")]
@@ -62,5 +62,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion("1.2.1.0")]
+[assembly: AssemblyVersion("1.2.3.0")]
 //[assembly: AssemblyFileVersion("1.0.0.0")]
