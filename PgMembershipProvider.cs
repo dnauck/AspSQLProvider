@@ -463,6 +463,9 @@ namespace NauckIT.PostgreSQLProvider
 			totalRecords = 0;
 			MembershipUserCollection users = new MembershipUserCollection();
 
+			if (string.IsNullOrEmpty(emailToMatch))
+				return users;
+
 			// replace permitted wildcard characters 
 			emailToMatch = emailToMatch.Replace('*','%');
 			emailToMatch = emailToMatch.Replace('?', '_');
