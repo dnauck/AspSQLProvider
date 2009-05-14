@@ -28,7 +28,6 @@
 using System;
 using System.Reflection;
 using System.Resources;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
@@ -37,10 +36,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PostgreSQL Provider")]
 [assembly: AssemblyDescription("PostgreSQL Membership, Role, Profile and Session-State Store Provider for ASP.NET 2.0")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Nauck IT KG")]
-[assembly: AssemblyProduct("PostgreSQL Provider")]
-[assembly: AssemblyCopyright("Copyright © 2006 - 2009 Nauck IT KG")]
-[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguageAttribute("en")]
 [assembly: CLSCompliant(true)]
@@ -52,15 +47,3 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("0c7b829a-f6f7-4b4b-9b24-f10eacbbcb93")]
-
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-[assembly: AssemblyVersion("1.2.4.0")]
-//[assembly: AssemblyFileVersion("1.0.0.0")]
