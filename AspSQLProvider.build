@@ -17,6 +17,7 @@
 	<property name="build.metrics.dir" value="${path::get-full-path('BuildMetrics')}" readonly="true" />
 	<property name="publish.dir" value="${path::get-full-path('Publish')}" readonly="true" />
 	<property name="tools.dir" value="${path::get-full-path('Tools')}" readonly="true" />
+	<property name="lib.dir" value="${path::get-full-path('lib')}" readonly="true" />
 	<property name="gendarme.project" value="${path::combine(src.dir, 'gendarme.assemblies.txt')}" overwrite="false" />
 	<property name="ndepend.project" value="${path::combine(src.dir, 'NDependProject.xml')}" overwrite="false" />
 	<property name="fxcop.project" value="${path::combine(src.dir, 'AspSQLProvider.FxCop')}" overwrite="false" />
@@ -201,8 +202,11 @@
 				<include name="README.txt" />
 			</fileset>
 			<fileset basedir="${build.out.dir}" defaultexcludes="true">
-				<include name="*.dll" />
-				<include name="*.sql" />
+				<include name="NauckIT.PostgreSQLProvider.dll" />
+				<include name="DatabaseSchema.sql" />
+			</fileset>
+			<fileset basedir="${lib.dir}" defaultexcludes="true">
+				<include name="*" />
 			</fileset>
 		</zip>
 	</target>
