@@ -82,16 +82,9 @@
 	<target name="build" depends="init, createAssemblyInfo" description="Compilation of the build project">
 		<loadtasks assembly="${nauckit.nant.assembly}" />
 
-		<if test="${build.configuration == 'Debug'}">
-			<echo message="Build debug configuration" />
-		</if>
-
-		<if test="${build.configuration == 'Release'}">
-			<echo message="Build release configuration" />
-		</if>
-
-		<echo message="Source Dictionary: ${src.dir}" />
-		<echo message="Build Dictionary: ${build.out.dir}" />
+		<echo message="Build configuration: ${build.configuration}" />
+		<echo message="Source Directory: ${src.dir}" />
+		<echo message="Build Directory: ${build.out.dir}" />
 
 		<msbuild projectFile="${path::combine(src.dir, build.project)}" targets="${build.target}" verbosity="Minimal">
 			<property name="Configuration" value="${build.configuration}" />
@@ -168,12 +161,50 @@
 	</target>
 
 	<!-- packaging and publishing targets -->
-	<target name="package" depends="clean, build" description="Copy assembly to publish dictionary">
-		<copy todir="${publish.dir}">
-			<fileset basedir="${build.out.dir}" failonempty="true">
-				<include name="*.dll" />
+	<target name="package" depends="clean, build" description="Create and copy the AspSQLProvider distribution to the publish dictionary">
+		
+		<call target="packageSource" cascade="false" />
+
+		<call target="packageZipDistribution" cascade="false" />
+		
+	</target>
+
+	<target name="packageSource" depends="clean, init" description="Creates a zip file containing all sources and tools to build AspSQLProvider">
+		<property name="source.zip.file" value="NauckIT.PostgreSQLProvider-${assembly.version}.source.zip" />
+
+		<zip zipfile="${path::combine(publish.dir, source.zip.file)}" verbose="${nant.verbosity}">
+			<fileset defaultexcludes="true">
+				<include name="*/**" />
+				<exclude name=".git/" />
+				<exclude name="nant*.log*" />
+				<exclude name="${build.dir}/**" />
+				<exclude name="${build.metrics.dir}/**" />
+				<exclude name="${publish.dir}/**" />
+				<exclude name="${path::get-directory-name(ndepend.executable)}/**" />
+				<exclude name="${src.dir}/*/bin/**"/>
+				<exclude name="${src.dir}/*/obj/**"/>
+				<exclude name="${src.dir}/_Resharper*/**"/>
+				<exclude name="${src.dir}/**/*.user"/>
+				<exclude name="${src.dir}/**/*.suo"/>
+				<exclude name="${src.dir}/*.sln.cache"/>
+				<exclude name="${src.dir}/*.sln.proj"/>
 			</fileset>
-		</copy>
+		</zip>
+	</target>
+
+	<target name="packageZipDistribution" depends="clean, build" description="Creates a zip file containing the AspSQLProvider distribution">
+		<property name="dist.zip.file" value="NauckIT.PostgreSQLProvider-${assembly.version}.zip" />
+
+		<zip zipfile="${path::combine(publish.dir, dist.zip.file)}" verbose="${nant.verbosity}">
+			<fileset basedir="${src.dir}" defaultexcludes="true">
+				<include name="LICENSE.txt" />
+				<include name="README.txt" />
+			</fileset>
+			<fileset basedir="${build.out.dir}" defaultexcludes="true">
+				<include name="*.dll" />
+				<include name="*.sql" />
+			</fileset>
+		</zip>
 	</target>
 
 </project>
