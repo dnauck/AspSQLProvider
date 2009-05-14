@@ -782,8 +782,8 @@ namespace NauckIT.PostgreSQLProvider
 								reader.Read();
 
 								string password = reader.GetString(0);
-								string passwordAnswer = reader.GetString(1);
-								bool isLockedOut = reader.GetBoolean(2);
+								string passwordAnswer = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+								bool isLockedOut = reader.IsDBNull(2) ? false : reader.GetBoolean(2);
 
 								reader.Close();
 
