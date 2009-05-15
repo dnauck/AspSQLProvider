@@ -1,0 +1,117 @@
+﻿body 
+{
+	font-family: Lucida Sans Unicode;
+	font-size: 10pt;
+	color: #666666;
+	background: #CCCCCC;
+	text-align: center;
+}
+
+input
+{
+	font-size: 7pt;
+	color: #666666;
+	background: #CCCCCC;
+	border: 1px solid #666666;
+}
+
+a
+{
+	text-decoration: none;
+	color: #666666;
+}
+
+a:hover
+{
+	text-decoration: underline;
+	color: #393839;
+}
+
+div#wrapperAll
+{
+	width: 660px;
+	margin: auto;
+}
+
+div#content
+{
+	background-image: url('images/border.png');
+	background-repeat: repeat-y;
+	margin:0px;
+	clear: both;
+}
+
+div#topWrapper
+{
+	clear: both;
+	padding-left:20px;
+	padding-right:20px;
+}
+
+div#logo
+{
+	width: 292px;
+	height: 37px;
+	text-align: left;
+	font-size: 27px;
+	padding-left:3px;
+	float:left;
+}
+
+div#menu
+{
+	text-align: right;
+	height: 37px;
+	padding-right:10px;
+        
+}
+
+div#sep
+{
+	background-image: url('images/sep.png');
+	background-repeat: no-repeat;
+	height:14px;
+	clear: both;
+}
+
+div#wrapperContent
+{
+	clear: both;
+	text-align: center;
+}
+
+div#wrapperNote {
+        margin-left: auto;
+        margin-right: auto;
+        width: 591px;
+}
+
+div#noteTop
+{
+	background-image: url('images/note_top.png');
+	background-repeat: no-repeat;
+	height:16px;
+}
+
+div#noteContent
+{
+	background-image: url('images/note_bg.png');
+	background-repeat: repeat-y;
+	text-align: justify;
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+div#noteBottom
+{
+	background-image: url('images/note_bot.png');
+	background-repeat: no-repeat;
+	height:16px;
+}
+
+div#title
+{
+	border-left: 5px solid #718F49;
+	padding-left:3px;
+	font-weight: bold;
+}

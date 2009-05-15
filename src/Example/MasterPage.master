@@ -1,0 +1,49 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="MasterPage.master.cs" Inherits="MasterPage" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+	<title>AspSQLProvider Example Page</title>
+</head>
+<body>
+	<form id="form1" runat="server">
+		<div id="wrapperAll">
+			<div id="content">
+				<div id="topWrapper">
+					<div id="logo">
+						Asp<span style="color: #718F49;">SQLProvider</span></div>
+					<div id="menu">
+						<div style="padding-top: 15px;">
+							<span style="color: #718F49;">&raquo;</span>&nbsp;
+							<asp:HyperLink ID="LoginHyperLink" runat="server" NavigateUrl="~/Login.aspx">Login</asp:HyperLink>
+							<span style="color: #718F49; padding-left: 5px;">&raquo;</span>&nbsp;
+							<asp:HyperLink ID="SignUpHyperLink" runat="server" NavigateUrl="~/Register.aspx">Sign Up</asp:HyperLink>
+							<span style="color: #718F49; padding-left: 5px;">&raquo;</span>&nbsp;
+							<asp:HyperLink ID="AccountHyperLink" runat="server" NavigateUrl="~/Account/Profile.aspx">Account</asp:HyperLink>
+						</div>
+					</div>
+				</div>
+				<div id="sep">
+					&nbsp;</div>
+				<div id="wrapperContent">
+					<div id="wrapperNote">
+						<div id="noteTop">
+							&nbsp;
+						</div>
+						<div id="noteContent">
+							<div id="title">
+								<asp:ContentPlaceHolder ID="TitleContentPlaceHolder" runat="server">
+								</asp:ContentPlaceHolder>
+							</div>
+							<asp:ContentPlaceHolder ID="ContentPlaceHolder" runat="server">
+							</asp:ContentPlaceHolder>
+						</div>
+						<div id="noteBottom">
+							&nbsp;
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+</body>
+</html>
