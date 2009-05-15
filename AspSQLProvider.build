@@ -195,11 +195,23 @@
 
 	<target name="packageZipDistribution" depends="clean, build" description="Creates a zip file containing the AspSQLProvider distribution">
 		<property name="dist.zip.file" value="NauckIT.PostgreSQLProvider-${assembly.version}.zip" />
+		<property name="example.dir" value="${path::combine(src.dir, 'Example')}" />
+		
+		<!-- Copy build files into bin directory of Example web application -->
+		<mkdir dir="${path::combine(example.dir ,'bin')}" unless="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
+		<copy todir="${path::combine(example.dir ,'bin')}">
+			<fileset basedir="${build.out.dir}" defaultexcludes="true">
+				<include name="*" />
+			</fileset>
+		</copy>
 
 		<zip zipfile="${path::combine(publish.dir, dist.zip.file)}" verbose="${nant.verbosity}">
 			<fileset basedir="${src.dir}" defaultexcludes="true">
 				<include name="LICENSE.txt" />
 				<include name="README.txt" />
+				<include name="Example/**" />
+				<exclude name="Example/obj/**"/>
+				<exclude name="Example/*.user"/>
 			</fileset>
 			<fileset basedir="${build.out.dir}" defaultexcludes="true">
 				<include name="NauckIT.PostgreSQLProvider.dll" />
