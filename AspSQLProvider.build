@@ -217,8 +217,8 @@
 				<include name="NauckIT.PostgreSQLProvider.dll" />
 				<include name="DatabaseSchema.sql" />
 			</fileset>
-			<fileset basedir="${lib.dir}" defaultexcludes="true">
-				<include name="*" />
+			<fileset defaultexcludes="true">
+				<include name="${lib.dir}/**" />
 			</fileset>
 		</zip>
 	</target>
