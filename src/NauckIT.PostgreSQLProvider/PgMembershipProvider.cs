@@ -1044,8 +1044,8 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								reader.Read();
 
-								passwordAnswer = reader.GetString(0);
-								bool isLockedOut = reader.GetBoolean(1);
+								passwordAnswer = reader.IsDBNull(0) ? string.Empty : reader.GetString(0); ;
+								bool isLockedOut = reader.IsDBNull(1) ? false : reader.GetBoolean(1);
 
 								reader.Close();
 
@@ -1215,7 +1215,7 @@ namespace NauckIT.PostgreSQLProvider
 							{
 								reader.Read();
 								dbPassword = reader.GetString(0);
-								dbIsApproved = reader.GetBoolean(1);
+								dbIsApproved = reader.IsDBNull(1) ? false : reader.GetBoolean(1);
 							}
 							else
 							{
@@ -1320,34 +1320,18 @@ namespace NauckIT.PostgreSQLProvider
 		{
 			object providerUserKey = reader.GetValue(0);
 			string username = reader.GetString(1);
-			string email = string.Empty;
-			if (!reader.IsDBNull(2))
-				email = reader.GetString(2);
+			string email = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+			string passwordQuestion = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+			string comment = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+			bool isApproved = reader.IsDBNull(5) ? false : reader.GetBoolean(5);
+			bool isLockedOut = reader.IsDBNull(6) ? false : reader.GetBoolean(6);
+			DateTime creationDate = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7);
+			DateTime lastLoginDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8);
+			DateTime lastActivityDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9);
+			DateTime lastPasswordChangedDate = reader.IsDBNull(10) ? DateTime.MinValue : reader.GetDateTime(10);
+			DateTime lastLockedOutDate = reader.IsDBNull(11) ? DateTime.MinValue : reader.GetDateTime(11);
 
-			string passwordQuestion = string.Empty;
-			if (!reader.IsDBNull(3))
-				passwordQuestion = reader.GetString(3);
-			
-			string comment = string.Empty;
-			if (!reader.IsDBNull(4))
-				comment = reader.GetString(4);
-
-			bool isApproved = reader.GetBoolean(5);
-			bool isLockedOut = reader.GetBoolean(6);
-			DateTime creationDate = reader.GetDateTime(7);
-
-			DateTime lastLoginDate = new DateTime();
-			if (!reader.IsDBNull(8))
-				lastLoginDate = reader.GetDateTime(8);
-
-			DateTime lastActivityDate = reader.GetDateTime(9);
-			DateTime lastPasswordChangedDate = reader.GetDateTime(10);
-
-			DateTime lastLockedOutDate = new DateTime();
-			if (!reader.IsDBNull(11))
-				lastLockedOutDate = reader.GetDateTime(11);
-
-			MembershipUser u = new MembershipUser(this.Name,
+			return new MembershipUser(this.Name,
 												  username,
 												  providerUserKey,
 												  email,
@@ -1360,8 +1344,6 @@ namespace NauckIT.PostgreSQLProvider
 												  lastActivityDate,
 												  lastPasswordChangedDate,
 												  lastLockedOutDate);
-			
-			return u;
 		}
 
 		/// <summary>
@@ -1506,13 +1488,13 @@ namespace NauckIT.PostgreSQLProvider
 
 								if (failType.Equals(FailureType.Password))
 								{
-									failureCount = reader.GetInt32(0);
-									windowStart = reader.GetDateTime(1);
+									failureCount = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+									windowStart = reader.IsDBNull(1) ? DateTime.MinValue : reader.GetDateTime(1);
 								}
 								else if (failType.Equals(FailureType.PasswordAnswer))
 								{
-									failureCount = reader.GetInt32(2);
-									windowStart = reader.GetDateTime(3);
+									failureCount = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+									windowStart = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
 								}
 							}
 						}
