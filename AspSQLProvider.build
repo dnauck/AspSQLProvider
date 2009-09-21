@@ -176,7 +176,7 @@
 		<zip zipfile="${path::combine(publish.dir, source.zip.file)}" verbose="${nant.verbosity}">
 			<fileset defaultexcludes="true">
 				<include name="*/**" />
-				<exclude name=".git/" />
+				<exclude name=".git/**" />
 				<exclude name="nant*.log*" />
 				<exclude name="${build.dir}/**" />
 				<exclude name="${build.metrics.dir}/**" />
