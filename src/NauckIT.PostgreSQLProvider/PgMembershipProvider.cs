@@ -31,6 +31,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.Text;
 using System.Security.Cryptography;
+using System.Web;
 using System.Web.Hosting;
 using System.Web.Configuration;
 using System.Web.Security;
@@ -103,8 +104,13 @@ namespace NauckIT.PostgreSQLProvider
             // Get connection string.
             m_connectionString = GetConnectionString(config["connectionStringName"]);
 
+            // Check whether we are on a web hosted application or not
+            // If we're web hosted use the Web.config; otherwise the application's config file
+            Configuration cfg = HttpContext.Current != null
+                                    ? WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath)
+                                    : ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
             // Get encryption and decryption key information from the configuration.
-            Configuration cfg = WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath);
             m_machineKeyConfig = (MachineKeySection)cfg.GetSection("system.web/machineKey");
 
             if (!m_passwordFormat.Equals(MembershipPasswordFormat.Clear))
