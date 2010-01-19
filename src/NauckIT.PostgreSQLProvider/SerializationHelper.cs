@@ -35,106 +35,106 @@ using System.IO;
 
 namespace NauckIT.PostgreSQLProvider
 {
-	internal static class SerializationHelper
-	{
-		internal static string SerializeToBase64(object value)
-		{
-			return Convert.ToBase64String(SerializeToBinary(value));
-		}
+    internal static class SerializationHelper
+    {
+        internal static string SerializeToBase64(object value)
+        {
+            return Convert.ToBase64String(SerializeToBinary(value));
+        }
 
-		internal static T DeserializeFromBase64<T>(string value)
-		{
-			return DeserializeFromBinary<T>(Convert.FromBase64String(value));
-		}
+        internal static T DeserializeFromBase64<T>(string value)
+        {
+            return DeserializeFromBinary<T>(Convert.FromBase64String(value));
+        }
 
-		internal static string SerializeToXml<T>(T value, string nameSpace)
-		{
-			using (MemoryStream stream = new MemoryStream())
-			{
-				XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
-				UTF8Encoding utf8Encoding = new UTF8Encoding();
-				XmlTextWriter xmlWriter = new XmlTextWriter(stream, utf8Encoding);
-				xmlWriter.Formatting = Formatting.Indented;
-				xmlFormatter.Serialize(xmlWriter, value);
-				return utf8Encoding.GetString(stream.ToArray());
-			}
-		}
+        internal static string SerializeToXml<T>(T value, string nameSpace)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
+                UTF8Encoding utf8Encoding = new UTF8Encoding();
+                XmlTextWriter xmlWriter = new XmlTextWriter(stream, utf8Encoding);
+                xmlWriter.Formatting = Formatting.Indented;
+                xmlFormatter.Serialize(xmlWriter, value);
+                return utf8Encoding.GetString(stream.ToArray());
+            }
+        }
 
-		internal static void SerializeToXmlFile<T>(string fileName, T value, string nameSpace)
-		{
-			using (FileStream stream = File.Create(fileName))
-			{
-				XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
-				formatter.Serialize(stream, value);
+        internal static void SerializeToXmlFile<T>(string fileName, T value, string nameSpace)
+        {
+            using (FileStream stream = File.Create(fileName))
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
+                formatter.Serialize(stream, value);
 
-				stream.Close();
-			}
-		}
+                stream.Close();
+            }
+        }
 
-		internal static T DeserializeFromXml<T>(string value, string nameSpace)
-		{
-			UTF8Encoding utf8Encoding = new UTF8Encoding();
+        internal static T DeserializeFromXml<T>(string value, string nameSpace)
+        {
+            UTF8Encoding utf8Encoding = new UTF8Encoding();
 
-			using (MemoryStream stream = new MemoryStream(utf8Encoding.GetBytes(value)))
-			{
-				XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
-				return (T)xmlFormatter.Deserialize(stream);
-			}
-		}
+            using (MemoryStream stream = new MemoryStream(utf8Encoding.GetBytes(value)))
+            {
+                XmlSerializer xmlFormatter = new XmlSerializer(typeof(T), nameSpace);
+                return (T)xmlFormatter.Deserialize(stream);
+            }
+        }
 
-		internal static T DeserializeFromXmlFile<T>(string fileName, string nameSpace)
-		{
-			using (FileStream stream = File.OpenRead(fileName))
-			{
-				XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
-				T result = (T)formatter.Deserialize(stream);
+        internal static T DeserializeFromXmlFile<T>(string fileName, string nameSpace)
+        {
+            using (FileStream stream = File.OpenRead(fileName))
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(T), nameSpace);
+                T result = (T)formatter.Deserialize(stream);
 
-				stream.Close();
-				return result;
-			}
-		}
+                stream.Close();
+                return result;
+            }
+        }
 
-		internal static byte[] SerializeToBinary(object value)
-		{
-			using (MemoryStream stream = new MemoryStream())
-			{
-				BinaryFormatter binFormatter = new BinaryFormatter();
-				binFormatter.Serialize(stream, value);
+        internal static byte[] SerializeToBinary(object value)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                BinaryFormatter binFormatter = new BinaryFormatter();
+                binFormatter.Serialize(stream, value);
 
-				return stream.ToArray();
-			}
-		}
+                return stream.ToArray();
+            }
+        }
 
-		internal static void SerializeToBinaryFile(string fileName, object value)
-		{
-			using (FileStream stream = File.Create(fileName))
-			{
-				BinaryFormatter formatter = new BinaryFormatter();
-				formatter.Serialize(stream, value);
+        internal static void SerializeToBinaryFile(string fileName, object value)
+        {
+            using (FileStream stream = File.Create(fileName))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, value);
 
-				stream.Close();
-			}
-		}
+                stream.Close();
+            }
+        }
 
-		internal static T DeserializeFromBinary<T>(byte[] value)
-		{
-			using (MemoryStream stream = new MemoryStream(value))
-			{
-				BinaryFormatter binFormatter = new BinaryFormatter();
-				return (T)binFormatter.Deserialize(stream);
-			}
-		}
+        internal static T DeserializeFromBinary<T>(byte[] value)
+        {
+            using (MemoryStream stream = new MemoryStream(value))
+            {
+                BinaryFormatter binFormatter = new BinaryFormatter();
+                return (T)binFormatter.Deserialize(stream);
+            }
+        }
 
-		internal static T DeserializeFromBinaryFile<T>(string fileName)
-		{
-			using (FileStream stream = File.OpenRead(fileName))
-			{
-				BinaryFormatter formatter = new BinaryFormatter();
-				T result = (T)formatter.Deserialize(stream);
+        internal static T DeserializeFromBinaryFile<T>(string fileName)
+        {
+            using (FileStream stream = File.OpenRead(fileName))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                T result = (T)formatter.Deserialize(stream);
 
-				stream.Close();
-				return result;
-			}
-		}
-	}
+                stream.Close();
+                return result;
+            }
+        }
+    }
 }
