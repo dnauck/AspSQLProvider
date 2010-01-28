@@ -146,65 +146,45 @@ namespace NauckIT.PostgreSQLProvider
         {
             using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
             {
-                using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+                try
                 {
-                    dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture, "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)", s_tableName);
+                    dbConn.Open();
 
-                    dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
-                    dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
-                    dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-                    dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)timeout);
-                    dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = timeout;
-                    dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
-                    dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = 0;
-                    dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
-                    dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = string.Empty;
-                    dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 1;
-
-                    NpgsqlTransaction dbTrans = null;
-
-                    try
+                    /* 
+                     * Bug #16: CreateUninitializedItem(...) throws ProviderException / duplicate key violation
+                     * Url: http://dev.nauck-it.de/issues/show/16
+                     * 
+                     * PostgreSQL is missing a InsertOrUpdate method so
+                     * try to insert first. If the insert failed due an already existing session id try
+                     * to update the database record. if this also fails, e.g. due session cleanup tasks, try
+                     * insert a new record again.
+                     * Try the whole process 10 times before give up.
+                     * 
+                     */
+                    int failureCount = 0;
+                    while(failureCount <= 10)
                     {
-                        dbConn.Open();
-                        dbCommand.Prepare();
+                        // try insert new item, on success leave while
+                        if (CreateUninitializedItemTryInsert(id, timeout, dbConn))
+                            return; // success, leave
 
-                        dbTrans = dbConn.BeginTransaction();
+                        // if insert fails due already existing session id, try update
+                        if (CreateUninitializedItemTryUpdate(id, timeout, dbConn))
+                            return; // success, leave
 
-                        dbCommand.ExecuteNonQuery();
-
-                        // Attempt to commit the transaction
-                        dbTrans.Commit();
+                        // try again
+                        failureCount++;
                     }
-                    catch (Exception e)
-                    {
-                        Trace.WriteLine(e.ToString());
-
-                        if (dbTrans != null)
-                        {
-                            try
-                            {
-                                // Attempt to roll back the transaction
-                                Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
-                                dbTrans.Rollback();
-                            }
-                            catch (NpgsqlException re)
-                            {
-                                // Rollback failed
-                                Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
-                                Trace.WriteLine(re.ToString());
-                            }
-                        }
-
-                        throw new ProviderException(Properties.Resources.ErrOperationAborted);
-                    }
-                    finally
-                    {
-                        if (dbTrans != null)
-                            dbTrans.Dispose();
-
-                        if (dbConn != null)
-                            dbConn.Close();
-                    }
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(e.ToString());
+                    throw new ProviderException(Properties.Resources.ErrOperationAborted);
+                }
+                finally
+                {
+                    if (dbConn != null)
+                        dbConn.Close();
                 }
             }
         }
@@ -534,6 +514,134 @@ namespace NauckIT.PostgreSQLProvider
         #endregion
 
         #region private methods
+
+        private bool CreateUninitializedItemTryInsert(string id, int timeout, NpgsqlConnection dbConn)
+        {
+            using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+            {
+                dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture,
+                                                      "INSERT INTO \"{0}\" (\"SessionId\", \"ApplicationName\", \"Created\", \"Expires\", \"Timeout\", \"Locked\", \"LockId\", \"LockDate\", \"Data\", \"Flags\") Values (@SessionId, @ApplicationName, @Created, @Expires, @Timeout, @Locked, @LockId, @LockDate, @Data, @Flags)",
+                                                      s_tableName);
+
+                dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+                dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
+                dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double) timeout);
+                dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = timeout;
+                dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+                dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = 0;
+                dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = string.Empty;
+                dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 1;
+
+                NpgsqlTransaction dbTrans = null;
+
+                try
+                {
+                    dbCommand.Prepare();
+
+                    dbTrans = dbConn.BeginTransaction();
+
+                    dbCommand.ExecuteNonQuery();
+
+                    // Attempt to commit the transaction
+                    dbTrans.Commit();
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(e.ToString());
+
+                    if (dbTrans != null)
+                    {
+                        try
+                        {
+                            // Attempt to roll back the transaction
+                            Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+                            dbTrans.Rollback();
+                        }
+                        catch (NpgsqlException re)
+                        {
+                            // Rollback failed
+                            Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+                            Trace.WriteLine(re.ToString());
+                        }
+                    }
+
+                    return false;
+                }
+                finally
+                {
+                    if (dbTrans != null)
+                        dbTrans.Dispose();
+                }
+            }
+        }
+
+        private bool CreateUninitializedItemTryUpdate(string id, int timeout, NpgsqlConnection dbConn)
+        {
+            using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
+            {
+                dbCommand.CommandText = string.Format(CultureInfo.InvariantCulture,
+                                                      "UPDATE \"{0}\" SET \"Created\" = @Created, \"Expires\" = @Expires, \"Timeout\" = @Timeout, \"Locked\" = @Locked, \"LockId\" = @LockId, \"LockDate\" = @LockDate, \"Data\" = @Data, \"Flags\" = @Flags WHERE \"SessionId\" = @SessionId AND \"ApplicationName\" = @ApplicationName",
+                                                      s_tableName);
+
+                dbCommand.Parameters.Add("@SessionId", NpgsqlDbType.Varchar, 80).Value = id;
+                dbCommand.Parameters.Add("@ApplicationName", NpgsqlDbType.Varchar, 255).Value = m_applicationName;
+                dbCommand.Parameters.Add("@Created", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                dbCommand.Parameters.Add("@Expires", NpgsqlDbType.TimestampTZ).Value = DateTime.Now.AddMinutes((Double)timeout);
+                dbCommand.Parameters.Add("@Timeout", NpgsqlDbType.Integer).Value = timeout;
+                dbCommand.Parameters.Add("@Locked", NpgsqlDbType.Boolean).Value = false;
+                dbCommand.Parameters.Add("@LockId", NpgsqlDbType.Integer).Value = 0;
+                dbCommand.Parameters.Add("@LockDate", NpgsqlDbType.TimestampTZ).Value = DateTime.Now;
+                dbCommand.Parameters.Add("@Data", NpgsqlDbType.Text).Value = string.Empty;
+                dbCommand.Parameters.Add("@Flags", NpgsqlDbType.Integer).Value = 1;
+
+                NpgsqlTransaction dbTrans = null;
+
+                try
+                {
+                    dbCommand.Prepare();
+
+                    dbTrans = dbConn.BeginTransaction();
+
+                    var result = dbCommand.ExecuteNonQuery();
+
+                    // Attempt to commit the transaction
+                    dbTrans.Commit();
+
+                    return (result > 0);
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(e.ToString());
+
+                    if (dbTrans != null)
+                    {
+                        try
+                        {
+                            // Attempt to roll back the transaction
+                            Trace.WriteLine(Properties.Resources.LogRollbackAttempt);
+                            dbTrans.Rollback();
+                        }
+                        catch (NpgsqlException re)
+                        {
+                            // Rollback failed
+                            Trace.WriteLine(Properties.Resources.ErrRollbackFailed);
+                            Trace.WriteLine(re.ToString());
+                        }
+                    }
+
+                    return false;
+                }
+                finally
+                {
+                    if (dbTrans != null)
+                        dbTrans.Dispose();
+                }
+            }
+        }
 
         /// <summary>
         /// Retrieves the session data from the data source.
