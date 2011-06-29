@@ -98,16 +98,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NauckIT.PostgreSQLProvider\PostgreSQLProvider.csproj">
-      <Project>{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}</Project>
-      <Name>PostgreSQLProvider</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="MasterPage.master" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NauckIT.PostgreSQLProvider\PostgreSQLProvider.csproj">
+      <Project>{FF3FB1BB-8986-4AD4-91F1-DA778A1FA65D}</Project>
+      <Name>PostgreSQLProvider</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!--<Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v9.0\WebApplications\Microsoft.WebApplication.targets" />-->
