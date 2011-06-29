@@ -327,28 +327,6 @@
             Creates the default derived class.
             </summary>
         </member>
-        <member name="M:Npgsql.SqlGenerators.SqlBaseGenerator.GetColumnsForJoin(Npgsql.SqlGenerators.JoinExpression,Npgsql.SqlGenerators.ProjectionExpression,Npgsql.SqlGenerators.VisitedExpression)">
-            <summary>
-            Given a join expression and a projection, fetch all columns in the projection
-            that reference columns in the join.
-            </summary>
-        </member>
-        <member name="M:Npgsql.SqlGenerators.SqlBaseGenerator.GetFromNames(Npgsql.SqlGenerators.InputExpression,System.Collections.Generic.List{System.String})">
-            <summary>
-            Given an InputExpression append all from names (including nested joins) to the list.
-            </summary>
-        </member>
-        <member name="M:Npgsql.SqlGenerators.SqlBaseGenerator.GetReplacementColumn(Npgsql.SqlGenerators.JoinExpression,Npgsql.SqlGenerators.ColumnExpression)">
-            <summary>
-            Get new ColumnExpression that will be used in projection that had it's existing columns moved.
-            These should be simple references to the inner column
-            </summary>
-        </member>
-        <member name="M:Npgsql.SqlGenerators.SqlBaseGenerator.AdjustPropertyAccess(Npgsql.SqlGenerators.ColumnExpression[],System.String)">
-            <summary>
-            Every property accessed in the list of columns must be adjusted for a new scope
-            </summary>
-        </member>
         <member name="T:Npgsql.PGUtil">
             <summary>
              This class provides many util methods to handle
