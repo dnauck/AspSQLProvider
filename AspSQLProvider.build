@@ -207,8 +207,6 @@
 
 		<zip zipfile="${path::combine(publish.dir, dist.zip.file)}" verbose="${nant.verbosity}">
 			<fileset basedir="${src.dir}" defaultexcludes="true">
-				<include name="LICENSE.txt" />
-				<include name="README.txt" />
 				<include name="Example/**" />
 				<exclude name="Example/obj/**"/>
 				<exclude name="Example/*.user"/>
@@ -219,6 +217,8 @@
 			</fileset>
 			<fileset defaultexcludes="true">
 				<include name="${lib.dir}/**" />
+        <include name="LICENSE.txt" />
+        <include name="README.txt" />
 			</fileset>
 		</zip>
 	</target>
