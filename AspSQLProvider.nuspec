@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>NauckIT.PostgreSQLProvider</id>
+    <version>0.0</version>
+    <title>NauckIT.PostgreSQLProvider</title>
+    <authors>Daniel Nauck</authors>
+    <owners>Nauck IT KG</owners>
+    <licenseUrl>http://www.opensource.org/licenses/mit-license.php</licenseUrl>
+    <projectUrl>http://dev.nauck-it.de/projects/aspsqlprovider</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider.
+
+NauckIT.PostgreSQLProvider is released under the MIT/X11 license.</description>
+    <summary>A ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider</summary>
+    <tags>ASP.NET Web PostgreSQL Npgsql Provider Membership Role Profile Session Nauck</tags>
+  </metadata>
+  <files>
+    <file src="Build\DatabaseSchema.sql" target="content\DatabaseSchema.sql" />
+    <file src="LICENSE.txt" target="content\App_Readme\NauckIT.PostgreSQLProvider.LICENSE.txt" />
+    <file src="README.txt" target="content\App_Readme\NauckIT.PostgreSQLProvider.README.txt" />
+    <file src="Build\NauckIT.PostgreSQLProvider.dll" target="lib\NauckIT.PostgreSQLProvider.dll" />
+    <file src="Build\NauckIT.PostgreSQLProvider.pdb" target="lib\NauckIT.PostgreSQLProvider.pdb" />
+  </files>
+</package>
