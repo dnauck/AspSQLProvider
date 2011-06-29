@@ -7,7 +7,7 @@
 	<property name="build.configuration" value="Debug" overwrite="false" />
 	<property name="build.target" value="Build" overwrite="false" />
 	<property name="build.project" value="AspSQLProvider.sln" overwrite="false" />
-	<property name="build.target.framework" value="3.5" overwrite="false" />
+	<property name="build.target.framework" value="4.0" overwrite="false" />
 	<property name="CCNetLabel" value="0.0.0.0" overwrite="false" />
 	<property name="codemetrics.output.type" value="XmlFile" overwrite="false" />
 
