@@ -1,4 +1,3 @@
--- $Id$
 -- PostgreSQL 8 Membership Provider Schema
 
 CREATE TABLE "Users" (

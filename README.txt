@@ -1,9 +1,9 @@
-About AspSQLProvider
+About NauckIT.PostgreSQLProvider
 
-AspSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0 Membership, Role,
+NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0 Membership, Role,
 Profileprovider and Session-State Store Provider.
 
-AspSQLProvider is distributed using the MIT/X11 License.
+NauckIT.PostgreSQLProvider is distributed using the MIT/X11 License.
 
 Requirements:
 
@@ -12,6 +12,6 @@ Requirements:
     * PostgreSQL 8.x Server 
 
 The latest release and documentation can be found on
-the AspSQLProvider project website:
+the NauckIT.PostgreSQLProvider project website:
 
 http://dev.nauck-it.de/aspsqlprovider/

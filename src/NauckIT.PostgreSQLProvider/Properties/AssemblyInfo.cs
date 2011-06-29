@@ -1,7 +1,5 @@
 //
-// $Id$
-//
-// Copyright © 2006 - 2009 Nauck IT KG		http://www.nauck-it.de
+// Copyright © 2006 - 2011 Nauck IT KG		http://www.nauck-it.de
 //
 // Author:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
