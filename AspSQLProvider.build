@@ -21,12 +21,14 @@
 	<property name="gendarme.project" value="${path::combine(src.dir, 'gendarme.assemblies.txt')}" overwrite="false" />
 	<property name="ndepend.project" value="${path::combine(src.dir, 'NDependProject.xml')}" overwrite="false" />
 	<property name="fxcop.project" value="${path::combine(src.dir, 'AspSQLProvider.FxCop')}" overwrite="false" />
+  <property name="nuget.project" value="AspSQLProvider.nuspec" overwrite="false" />
 
 	<!-- tool path properties -->
 	<property name="nauckit.nant.assembly" value="${path::combine( path::combine(tools.dir, 'NAnt'), 'NauckIT.NAnt.dll')}" readonly="true" />
 	<property name="gendarme.executable" value="${path::combine( path::combine(tools.dir, 'Gendarme'), 'gendarme.exe')}" readonly="true" />
 	<property name="ndepend.executable" value="${path::combine( path::combine(tools.dir, 'NDepend'), 'NDepend.Console.exe')}" readonly="true" />
 	<property name="fxcop.executable" value="${path::combine( path::combine(tools.dir, 'FxCop'), 'FxCopCmd.exe')}" readonly="true" />
+  <property name="nuget.executable" value="${path::combine( path::combine(tools.dir, 'NuGet'), 'NuGet.exe')}" readonly="true" />
 
 	<!-- common assembly info properties -->
 	<property name="assembly.company" value="Nauck IT KG" readonly="true" />
@@ -167,6 +169,8 @@
 		<call target="packageSource" cascade="false" />
 
 		<call target="packageZipDistribution" cascade="false" />
+
+    <call target="packageNuGet" cascade="false" />
 		
 	</target>
 
@@ -222,5 +226,15 @@
 			</fileset>
 		</zip>
 	</target>
+
+  <target name="packageNuGet" depends="clean, build" description="Creates a new NuGet package">
+    <exec program="${nuget.executable}" verbose="true">
+      <arg value="pack" />
+      <arg value="${nuget.project}" />
+      <arg value="-Verbose" />
+      <arg line="-Version ${assembly.version}" />
+      <arg line="-OutputDirectory ${publish.dir}" />
+    </exec>
+  </target>
 
 </project>
