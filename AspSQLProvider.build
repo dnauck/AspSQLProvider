@@ -123,6 +123,8 @@
         <include name="NauckIT.PostgreSQLProvider.???" />
       </fileset>
     </move>
+
+    <delete dir="${build.merged.dir}" if="${directory::exists(build.merged.dir)}" verbose="${nant.verbosity}" />
   </target>
 
 	<!-- Code analyze metric targets -->
@@ -231,6 +233,7 @@
 		<property name="example.dir" value="${path::combine(src.dir, 'Example')}" />
 		
 		<!-- Copy build files into bin directory of Example web application -->
+    <delete dir="${path::combine(example.dir ,'bin')}" if="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
 		<mkdir dir="${path::combine(example.dir ,'bin')}" unless="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
 		<copy todir="${path::combine(example.dir ,'bin')}">
 			<fileset basedir="${build.out.dir}" defaultexcludes="true">
