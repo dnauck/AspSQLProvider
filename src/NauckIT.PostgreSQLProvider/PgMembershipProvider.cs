@@ -104,7 +104,7 @@ namespace NauckIT.PostgreSQLProvider
 
             // Check whether we are on a web hosted application or not
             // If we're web hosted use the Web.config; otherwise the application's config file
-            Configuration cfg = HttpContext.Current != null
+            Configuration cfg = HostingEnvironment.IsHosted
                                     ? WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath)
                                     : ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 
