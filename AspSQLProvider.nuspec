@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>NauckIT.PostgreSQLProvider</id>
-    <version>0.0</version>
+    <version>$version$</version>
     <title>NauckIT.PostgreSQLProvider</title>
     <authors>Daniel Nauck</authors>
     <owners>Nauck IT KG</owners>
@@ -16,11 +16,14 @@
     </description>
     <summary>A ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider</summary>
     <tags>ASP.NET Web PostgreSQL Npgsql Provider Membership Role Profile Session Nauck</tags>
+    <dependencies>
+      <dependency id="Npgsql" version="2.0" />
+    </dependencies>
   </metadata>
   <files>
     <file src="Build\DatabaseSchema.sql" target="content\DatabaseSchema.sql" />
-    <file src="LICENSE.txt" target="content\App_Readme\NauckIT.PostgreSQLProvider.LICENSE.txt" />
-    <file src="README.txt" target="content\App_Readme\NauckIT.PostgreSQLProvider.README.txt" />
+    <file src="LICENSE.txt" target="LICENSE.txt" />
+    <file src="README.txt" target="README.txt" />
     <file src="Build\NauckIT.PostgreSQLProvider.dll" target="lib\NauckIT.PostgreSQLProvider.dll" />
     <file src="Build\NauckIT.PostgreSQLProvider.pdb" target="lib\NauckIT.PostgreSQLProvider.pdb" />
   </files>
