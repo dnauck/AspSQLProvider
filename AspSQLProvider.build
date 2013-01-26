@@ -14,7 +14,7 @@
 	<!-- common path properties -->
 	<property name="src.dir" value="${path::get-full-path('src')}" readonly="true" />
 	<property name="build.dir" value="${path::get-full-path('Build')}" readonly="true" />
-  <property name="build.merged.dir" value="${path::combine(build.dir, 'merged')}" readonly="true" />
+	<property name="build.merged.dir" value="${path::combine(build.dir, 'merged')}" readonly="true" />
 	<property name="build.metrics.dir" value="${path::get-full-path('BuildMetrics')}" readonly="true" />
 	<property name="publish.dir" value="${path::get-full-path('Publish')}" readonly="true" />
 	<property name="tools.dir" value="${path::get-full-path('Tools')}" readonly="true" />
@@ -22,15 +22,15 @@
 	<property name="gendarme.project" value="${path::combine(src.dir, 'gendarme.assemblies.txt')}" overwrite="false" />
 	<property name="ndepend.project" value="${path::combine(src.dir, 'NDependProject.xml')}" overwrite="false" />
 	<property name="fxcop.project" value="${path::combine(src.dir, 'AspSQLProvider.FxCop')}" overwrite="false" />
-  <property name="nuget.project" value="AspSQLProvider.nuspec" overwrite="false" />
+	<property name="nuget.project" value="AspSQLProvider.nuspec" overwrite="false" />
 
 	<!-- tool path properties -->
 	<property name="nauckit.nant.assembly" value="${path::combine( path::combine(tools.dir, 'NAnt'), 'NauckIT.NAnt.dll')}" readonly="true" />
 	<property name="gendarme.executable" value="${path::combine( path::combine(tools.dir, 'Gendarme'), 'gendarme.exe')}" readonly="true" />
 	<property name="ndepend.executable" value="${path::combine( path::combine(tools.dir, 'NDepend'), 'NDepend.Console.exe')}" readonly="true" />
 	<property name="fxcop.executable" value="${path::combine( path::combine(tools.dir, 'FxCop'), 'FxCopCmd.exe')}" readonly="true" />
-  <property name="nuget.executable" value="${path::combine( path::combine(tools.dir, 'NuGet'), 'NuGet.exe')}" readonly="true" />
-  <property name="merger.executable" value="${path::combine( path::combine(tools.dir, 'ILRepack'), 'ILRepack.exe')}" readonly="true" />
+	<property name="nuget.executable" value="${path::combine( path::combine(tools.dir, 'NuGet'), 'NuGet.exe')}" readonly="true" />
+	<property name="merger.executable" value="${path::combine( path::combine(tools.dir, 'ILRepack'), 'ILRepack.exe')}" readonly="true" />
 
 	<!-- common assembly info properties -->
 	<property name="assembly.company" value="Nauck IT KG" readonly="true" />
@@ -64,7 +64,7 @@
 
 	<target name="init" description="Initial compilation setup">
 		<mkdir dir="${build.dir}" unless="${directory::exists(build.dir)}" verbose="${nant.verbosity}" />
-    <mkdir dir="${build.merged.dir}" unless="${directory::exists(build.merged.dir)}" verbose="${nant.verbosity}" />
+		<mkdir dir="${build.merged.dir}" unless="${directory::exists(build.merged.dir)}" verbose="${nant.verbosity}" />
 		<mkdir dir="${build.metrics.dir}" unless="${directory::exists(build.metrics.dir)}" verbose="${nant.verbosity}" />
 		<mkdir dir="${publish.dir}" unless="${directory::exists(publish.dir)}" verbose="${nant.verbosity}" />
 	</target>
@@ -99,33 +99,33 @@
 		</msbuild>
 	</target>
 
-  <target name="mergeAssemblies" depends="build" description="IL merge assemblies into a single one for distribution">
-    <exec program="${merger.executable}" verbose="true">
-      <arg value="-target:library" />
-      <arg value="-internalize" />
-      <arg value="-verbose" />
-      <!--<arg value="-log:merge.log.txt" />-->
-      <arg value="-lib:${build.dir}" />
-      <arg value="/out:${build.merged.dir}/NauckIT.PostgreSQLProvider.dll" />
-      <arg value="${build.dir}/NauckIT.PostgreSQLProvider.dll" />
-      <arg value="${build.dir}/Npgsql.dll" />
-      <arg value="${build.dir}/Mono.Security.dll" />
-    </exec>
+	<target name="mergeAssemblies" depends="build" description="IL merge assemblies into a single one for distribution">
+		<exec program="${merger.executable}" verbose="true">
+			<arg value="-target:library" />
+			<arg value="-internalize" />
+			<arg value="-verbose" />
+			<!--<arg value="-log:merge.log.txt" />-->
+			<arg value="-lib:${build.dir}" />
+			<arg value="/out:${build.merged.dir}/NauckIT.PostgreSQLProvider.dll" />
+			<arg value="${build.dir}/NauckIT.PostgreSQLProvider.dll" />
+			<arg value="${build.dir}/Npgsql.dll" />
+			<arg value="${build.dir}/Mono.Security.dll" />
+		</exec>
 
-    <delete>
-      <fileset basedir="${build.dir}" defaultexcludes="true">
-        <include name="Npgsql.???" />
-        <include name="Mono.Security.???" />
-      </fileset>
-    </delete>
-    <move todir="${build.dir}" overwrite="true" verbose="${nant.verbosity}">
-      <fileset basedir="${build.merged.dir}" defaultexcludes="true">
-        <include name="NauckIT.PostgreSQLProvider.???" />
-      </fileset>
-    </move>
+		<delete>
+			<fileset basedir="${build.dir}" defaultexcludes="true">
+				<include name="Npgsql.???" />
+				<include name="Mono.Security.???" />
+			</fileset>
+		</delete>
+		<move todir="${build.dir}" overwrite="true" verbose="${nant.verbosity}">
+			<fileset basedir="${build.merged.dir}" defaultexcludes="true">
+				<include name="NauckIT.PostgreSQLProvider.???" />
+			</fileset>
+		</move>
 
-    <delete dir="${build.merged.dir}" if="${directory::exists(build.merged.dir)}" verbose="${nant.verbosity}" />
-  </target>
+		<delete dir="${build.merged.dir}" if="${directory::exists(build.merged.dir)}" verbose="${nant.verbosity}" />
+	</target>
 
 	<!-- Code analyze metric targets -->
 	<target name="runCodeMetrics" depends="build" description="Analyze and collect code metrics of the compiled assemblies">
@@ -163,7 +163,7 @@
 		</if>
 
 		<gendarme executable="${gendarme.executable}" outputType="${codemetrics.output.type}" outputFile="${path::combine(build.metrics.dir, gendarme.output.file)}"
-              workingDirectory="${build.out.dir}" assemblyListFile="${gendarme.project}" />
+							workingDirectory="${build.out.dir}" assemblyListFile="${gendarme.project}" />
 	</target>
 
 	<target name="runNdepend" depends="build" description="Analyze and collect code metrics of the compiled assemblies with NDepend">
@@ -201,7 +201,7 @@
 
 		<call target="packageZipDistribution" cascade="false" />
 
-    <call target="packageNuGet" cascade="false" />
+		<call target="packageNuGet" cascade="false" />
 		
 	</target>
 
@@ -233,7 +233,7 @@
 		<property name="example.dir" value="${path::combine(src.dir, 'Example')}" />
 		
 		<!-- Copy build files into bin directory of Example web application -->
-    <delete dir="${path::combine(example.dir ,'bin')}" if="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
+		<delete dir="${path::combine(example.dir ,'bin')}" if="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
 		<mkdir dir="${path::combine(example.dir ,'bin')}" unless="${directory::exists(path::combine(example.dir ,'bin'))}" verbose="${nant.verbosity}" />
 		<copy todir="${path::combine(example.dir ,'bin')}">
 			<fileset basedir="${build.out.dir}" defaultexcludes="true">
@@ -251,25 +251,25 @@
 				<include name="NauckIT.PostgreSQLProvider.dll" />
 				<include name="DatabaseSchema.sql" />
 			</fileset>
-      <fileset basedir="${lib.dir}" defaultexcludes="true">
-        <include name="*/*.txt" />
-        <include name="*/*.html" />
-      </fileset>
+			<fileset basedir="${lib.dir}" defaultexcludes="true">
+				<include name="*/*.txt" />
+				<include name="*/*.html" />
+			</fileset>
 			<fileset defaultexcludes="true">
-        <include name="LICENSE.txt" />
-        <include name="README.txt" />
+				<include name="LICENSE.txt" />
+				<include name="README.txt" />
 			</fileset>
 		</zip>
 	</target>
 
-  <target name="packageNuGet" depends="clean, build, mergeAssemblies" description="Creates a new NuGet package">
-    <exec program="${nuget.executable}" verbose="true">
-      <arg value="pack" />
-      <arg value="${nuget.project}" />
-      <arg value="-Verbose" />
-      <arg line="-Version ${assembly.version}" />
-      <arg line="-OutputDirectory ${publish.dir}" />
-    </exec>
-  </target>
+	<target name="packageNuGet" depends="clean, build, mergeAssemblies" description="Creates a new NuGet package">
+		<exec program="${nuget.executable}" verbose="true">
+			<arg value="pack" />
+			<arg value="${nuget.project}" />
+			<arg value="-Verbose" />
+			<arg line="-Version ${assembly.version}" />
+			<arg line="-OutputDirectory ${publish.dir}" />
+		</exec>
+	</target>
 
 </project>
