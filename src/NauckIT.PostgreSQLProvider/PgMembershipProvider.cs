@@ -1156,6 +1156,10 @@ namespace NauckIT.PostgreSQLProvider
         /// </summary>
         public override void UpdateUser(MembershipUser user)
         {
+            // validate duplicate email address, see issue #29
+            if (RequiresUniqueEmail && !string.IsNullOrEmpty(GetUserNameByEmail(user.Email)))
+                throw new ProviderException("Duplicate E-mail address. The E-mail supplied is invalid.");
+
             using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
             {
                 using (NpgsqlCommand dbCommand = dbConn.CreateCommand())
