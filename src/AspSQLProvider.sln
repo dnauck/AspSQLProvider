@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{38AF7B61-CD02-4C4D-B844-C7B8FA8946D0}"
 	ProjectSection(SolutionItems) = preProject
+		..\AspSQLProvider.build = ..\AspSQLProvider.build
+		..\AspSQLProvider.nuspec = ..\AspSQLProvider.nuspec
 		..\LICENSE.txt = ..\LICENSE.txt
 		..\README.txt = ..\README.txt
 	EndProjectSection
