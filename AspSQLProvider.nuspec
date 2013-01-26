@@ -9,9 +9,11 @@
     <licenseUrl>http://www.opensource.org/licenses/mit-license.php</licenseUrl>
     <projectUrl>http://dev.nauck-it.de/projects/aspsqlprovider</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider.
+    <description>
+      NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider.
 
-NauckIT.PostgreSQLProvider is released under the MIT/X11 license.</description>
+      NauckIT.PostgreSQLProvider is released under the MIT/X11 license.
+    </description>
     <summary>A ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider</summary>
     <tags>ASP.NET Web PostgreSQL Npgsql Provider Membership Role Profile Session Nauck</tags>
   </metadata>
