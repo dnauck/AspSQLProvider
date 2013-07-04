@@ -36,8 +36,8 @@
 	<property name="assembly.copyright" value="Copyright © 2006 - ${datetime::get-year(datetime::now())} ${assembly.company}" readonly="true" />
 	<property name="assembly.trademark" value="" readonly="true" />
 	<property name="assembly.version" value="2.0.0.0" readonly="true" />
-	<property name="assembly.fileversion" value="2.0.0.1" readonly="true" />
-	<property name="assembly.informationalversion" value="2.0.0" readonly="true" />
+	<property name="assembly.fileversion" value="2.1.0.1" readonly="true" />
+	<property name="assembly.informationalversion" value="2.1.0-dev" readonly="true" />
 
 	<!-- Framework Support
 	http://nant.sourceforge.net/faq.html#framework-support
