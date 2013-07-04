@@ -1,5 +1,5 @@
 //
-// Copyright © 2007 - 2011 Nauck IT KG		http://www.nauck-it.de
+// Copyright © 2007 - 2013 Nauck IT KG		http://www.nauck-it.de
 //
 // Authors:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
