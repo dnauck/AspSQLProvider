@@ -80,7 +80,7 @@ namespace NauckIT.PostgreSQLProvider
             m_connectionString = PgMembershipProvider.GetConnectionString(config["connectionStringName"]);
 
             // Get <sessionState> configuration element.
-            m_config = (SessionStateSection)WebConfigurationManager.OpenWebConfiguration(HostingEnvironment.ApplicationVirtualPath).GetSection("system.web/sessionState");
+            m_config = (SessionStateSection)WebConfigurationManager.GetSection("system.web/sessionState");
 
             // Should automatic session garbage collection be turned on?
             bool enableExpiredSessionAutoDeletion = Convert.ToBoolean(PgMembershipProvider.GetConfigValue(config["enableExpiredSessionAutoDeletion"], "false"), CultureInfo.InvariantCulture);
