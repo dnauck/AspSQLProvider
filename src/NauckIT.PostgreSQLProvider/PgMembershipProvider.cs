@@ -1159,7 +1159,7 @@ namespace NauckIT.PostgreSQLProvider
             if (RequiresUniqueEmail)
             {
                 string userName = GetUserNameByEmail(user.Email);
-                if (!string.IsNullOrWhiteSpace(userName) && !userName.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase))
+                if (!string.IsNullOrEmpty(userName) && !userName.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase))
                     throw new ProviderException("The e-mail address that you entered is already in use. Please enter a different e-mail address.");
             }
 
