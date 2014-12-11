@@ -13,8 +13,8 @@ Documentation
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
-      The F# ProjectTemplate library can be <a href="https://nuget.org/packages/FSharp.ProjectTemplate">installed from NuGet</a>:
-      <pre>PM> Install-Package FSharp.ProjectTemplate</pre>
+      The F# ProjectTemplate library can be <a href="https://nuget.org/packages/NauckIT.PostgreSQLProvider">installed from NuGet</a>:
+      <pre>PM> Install-Package NauckIT.PostgreSQLProvider</pre>
     </div>
   </div>
   <div class="span1"></div>
@@ -26,8 +26,8 @@ Example
 This example demonstrates using a function defined in this sample library.
 
 *)
-#r "FSharp.ProjectTemplate.dll"
-open FSharp.ProjectTemplate
+#r "NauckIT.PostgreSQLProvider.dll"
+open NauckIT.PostgreSQLProvider
 
 printfn "hello = %i" <| Library.hello 0
 
@@ -59,9 +59,9 @@ The library is available under Public Domain license, which allows modification 
 redistribution for both commercial and non-commercial purposes. For more information see the 
 [License file][license] in the GitHub repository. 
 
-  [content]: https://github.com/fsprojects/FSharp.ProjectScaffold/tree/master/docs/content
-  [gh]: https://github.com/fsprojects/FSharp.ProjectScaffold
-  [issues]: https://github.com/fsprojects/FSharp.ProjectScaffold/issues
-  [readme]: https://github.com/fsprojects/FSharp.ProjectScaffold/blob/master/README.md
-  [license]: https://github.com/fsprojects/FSharp.ProjectScaffold/blob/master/LICENSE.txt
+  [content]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/tree/master/docs/content
+  [gh]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider
+  [issues]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/issues
+  [readme]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/blob/master/README.md
+  [license]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/blob/master/LICENSE.txt
 *)

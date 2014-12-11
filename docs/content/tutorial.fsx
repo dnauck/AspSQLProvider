@@ -10,8 +10,8 @@ Introducing your project
 Say more
 
 *)
-#r "FSharp.ProjectTemplate.dll"
-open FSharp.ProjectTemplate
+#r "NauckIT.PostgreSQLProvider.dll"
+open NauckIT.PostgreSQLProvider
 
 Library.hello 0
 (**

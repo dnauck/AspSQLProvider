@@ -4,19 +4,19 @@
 // --------------------------------------------------------------------------------------
 
 // Binaries that have XML documentation (in a corresponding generated XML file)
-let referenceBinaries = [ "##ProjectName##.dll" ]
+let referenceBinaries = [ "NauckIT.PostgreSQLProvider.dll" ]
 // Web site location for the generated documentation
-let website = "/##ProjectName##"
+let website = "/NauckIT.PostgreSQLProvider"
 
-let githubLink = "http://github.com/##GitHome##/##GitName##"
+let githubLink = "http://github.com/dnauck/NauckIT.PostgreSQLProvider"
 
 // Specify more information about your project
 let info =
-  [ "project-name", "##ProjectName##"
-    "project-author", "##Author##"
-    "project-summary", "##Summary##"
+  [ "project-name", "NauckIT.PostgreSQLProvider"
+    "project-author", "Daniel Nauck"
+    "project-summary", "NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider."
     "project-github", githubLink
-    "project-nuget", "http://nuget.org/packages/##ProjectName##" ]
+    "project-nuget", "http://nuget.org/packages/NauckIT.PostgreSQLProvider" ]
 
 // --------------------------------------------------------------------------------------
 // For typical project, no changes are needed below
