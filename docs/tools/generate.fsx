@@ -6,9 +6,9 @@
 // Binaries that have XML documentation (in a corresponding generated XML file)
 let referenceBinaries = [ "NauckIT.PostgreSQLProvider.dll" ]
 // Web site location for the generated documentation
-let website = "/NauckIT.PostgreSQLProvider"
+let website = "/AspSQLProvider"
 
-let githubLink = "http://github.com/dnauck/NauckIT.PostgreSQLProvider"
+let githubLink = "http://github.com/dnauck/AspSQLProvider"
 
 // Specify more information about your project
 let info =
