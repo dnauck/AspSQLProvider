@@ -1,28 +1,29 @@
-# ProjectScaffold
+# NauckIT.PostgreSQLProvider
 
-This project can be used to scaffold a prototypical .NET solution including file system layout and tooling. This includes a build process that: 
+NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0 Membership, Role,
+Profileprovider and Session-State Store Provider.
 
-* updates all AssemblyInfo files
-* compiles the application and runs all test projects
-* generates [SourceLinks](https://github.com/ctaggart/SourceLink)
-* generates API docs based on XML document tags
-* generates [documentation based on Markdown files](http://fsprojects.github.io/ProjectScaffold/writing-docs.html)
-* generates [NuGet](http://www.nuget.org) packages
-* and allows a simple [one step release process](http://fsprojects.github.io/ProjectScaffold/release-process.html).
+[![NuGet Status](http://img.shields.io/nuget/v/NauckIT.PostgreSQLProvider.svg?style=flat)](https://www.nuget.org/packages/NauckIT.PostgreSQLProvider/)
 
-In order to start the scaffolding process run 
+NauckIT.PostgreSQLProvider is distributed using the MIT/X11 License.
 
-    $ build.cmd // on windows    
-    $ build.sh  // on mono
-    
-Read the [Getting started tutorial](http://fsprojects.github.io/ProjectScaffold/index.html#Getting-started) to learn more.
+## Documentation
 
-Documentation: http://fsprojects.github.io/ProjectScaffold
 
-## Maintainer(s)
+Read the [Getting started tutorial](http://dnauck.github.io/AspSQLProvider/index.html#Getting-started) to learn more.
 
-- [@forki](https://github.com/forki)
-- [@pblasucci](https://github.com/pblasucci)
-- [@sergey-tihon](https://github.com/sergey-tihon)
+Documentation: http://dnauck.github.io/AspSQLProvider
 
-The default maintainer account for projects under "fsprojects" is [@fsgit](https://github.com/fsgit) - F# Community Project Incubation Space (repo management)
+## Build status
+
+| Platform |  BuildScript | Status of last build |
+| :------ | :------: | :------: |
+| **Mono** | [build.sh](https://github.com/dnauck/AspSQLProvider/blob/master/build.sh) | [![Travis build status](https://travis-ci.org/dnauck/AspSQLProvider.png)](https://travis-ci.org/dnauck/AspSQLProvider) |
+| **Windows** | [build.cmd](https://github.com/dnauck/AspSQLProvider/blob/master/build.cmd) | [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/8dd4i6u5loqtfl4m/branch/master)](https://ci.appveyor.com/project/dnauck/aspsqlprovider/branch/master) |
+
+## Further Information
+
+The latest release and documentation can be found on
+the NauckIT.PostgreSQLProvider project website:
+
+http://dnauck.github.io/AspSQLProvider
