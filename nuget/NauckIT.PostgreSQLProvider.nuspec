@@ -5,18 +5,23 @@
     <version>@build.number@</version>
     <authors>@authors@</authors>
     <owners>@authors@</owners>
-    <licenseUrl>http://github.com/fsprojects/NauckIT.PostgreSQLProvider/blob/master/LICENSE.txt</licenseUrl>
-    <projectUrl>http://fsprojects.github.com/NauckIT.PostgreSQLProvider</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/fsprojects/ProjectScaffold/master/docs/files/img/logo.png</iconUrl>
+    <licenseUrl>http://github.com/dnauck/AspSQLProvider/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>http://dnauck.github.com/AspSQLProvider</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/dnauck/AspSQLProvider/master/docs/files/img/logo.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>@summary@</summary>
     <description>@description@</description>
     <releaseNotes>@releaseNotes@</releaseNotes>
     <copyright>Copyright 2013</copyright>
     <tags>@tags@</tags>
-    <dependencies />
+    <dependencies>
+      <dependency id="Npgsql" version="2.0" />
+    </dependencies>
   </metadata>
   <files>
+    <file src="..\bin\DatabaseSchema.sql" target="content/DatabaseSchema.sql" />
+    <file src="..\LICENSE.txt" target="LICENSE.txt" />
+    <file src="..\README.md" target="README.txt" />
     <file src="..\bin\NauckIT.PostgreSQLProvider.dll" target="lib/net40" />
     <file src="..\bin\NauckIT.PostgreSQLProvider.pdb" target="lib/net40" />
   </files>
