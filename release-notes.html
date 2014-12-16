@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>release-notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="NauckIT.PostgreSQLProvider is a PostgreSQL implementation of the ASP.NET 2.0+ Membership, Role, Profile and Session-State Store Provider."/>
+    <meta name="author" content="Daniel Nauck"/>
+
+    <script src="https://code.jquery.com/jquery-1.8.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.8.23/jquery-ui.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/js/bootstrap.min.js"></script>
+    <link href="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet"/>
+
+    <link type="text/css" rel="stylesheet" href="/AspSQLProvider/content/style.css" />
+    <script type="text/javascript" src="/AspSQLProvider/content/tips.js"></script>
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">
+      <div class="masthead">
+        <ul class="nav nav-pills pull-right">
+          <li><a href="http://www.nauck-it.de">Nauck IT KG</a></li>
+          <li><a href="http://github.com/dnauck/AspSQLProvider">github page</a></li>
+        </ul>
+        <h3 class="muted"><a href="/AspSQLProvider/index.html">NauckIT.PostgreSQLProvider</a></h3>
+      </div>
+      <hr />
+      <div class="row">
+        <div class="span9" id="main">
+          
+<h3>2.1 - Unreleased</h3>
+
+<ul>
+<li>Do not open Web.config for Read/Write (Fixes #137)</li>
+<li>Switch to FSharp.ProjectScaffold project and build tooling</li>
+<li>Update to latest Npgsql</li>
+</ul>
+
+<h3>2.0 - 26.01.2013</h3>
+
+<ul>
+<li>Consider duplicate emails settings while updating a user (Fixes #29)</li>
+<li>Fixed check to see if the provider should load the web or app config as this was breaking the ASP.NET Web Admin tool in .NET 4.0+
+(pull request #1 from steveuk/master, Fixes #131)</li>
+<li>Disable IL merging of Npgsql, add NuGet dependency instead</li>
+</ul>
+
+<h3>1.3.5 - 29.06.2011</h3>
+
+<ul>
+<li>Update to Npgsql 2.0.11.91</li>
+<li>Implement merging of all required assemblies into a single distribution assembly using ILRepack</li>
+<li>Update to latest FxCop, Gendarme and NAnt versions</li>
+<li>Add NuGet package build target (Fixes #127)</li>
+<li>Fixed bug #16 CreateUninitializedItem(...) throws ProviderException</li>
+<li>Implement support for non web hosted applications (Fixes #17)</li>
+<li>Test for DBNull values on possible NULL fields, based on the provided database schema.(Fixes #10)</li>
+</ul>
+
+<h3>1.2.4 - 05.03.2009</h3>
+
+<ul>
+<li>Update to Npgsql 2.0.4</li>
+</ul>
+
+<h3>1.2.3 - 26.02.2009</h3>
+
+<ul>
+<li>Update to Npgsql 2.0.3</li>
+</ul>
+
+<h3>1.2.1 - 04.11.2008</h3>
+
+<ul>
+<li>Cleanup expired session deletion timer on dispose</li>
+<li>Update to Npgsql 2.0.1</li>
+<li>Don't close connection in UpdateFailureCount before failure update (Fixes #6)</li>
+</ul>
+
+<h3>1.2.0 - 06.10.2008</h3>
+
+<ul>
+<li>Update to Npgsql 2.0 RTM</li>
+<li>implement support for Session_End event, based on a patch by C. Akkermans (Fixes #3)</li>
+<li>Fixed incorrect session expiration calculation, patch by C. Akkermans (Fixes #5)</li>
+<li>Fixed  incorrect session expiration timestamp calculation, patch by C. Akkermans(Fixes #4)</li>
+</ul>
+
+<h3>1.1.9 - 20.09.2008</h3>
+
+<ul>
+<li>Update to Npgsql 2.0 RC2</li>
+</ul>
+
+<h3>1.1.8 - 29.07.2008</h3>
+
+<ul>
+<li>Update to Npgsql 2.0 RC1</li>
+<li>add Mono.Security.dll dependency for Npgsql</li>
+<li>Sign the assembly with strong name key</li>
+<li>Close the DataReader before a new query, work around a new check in Npgsql 2 RC1</li>
+<li>Add support for auto expired session deletion, default is off</li>
+</ul>
+
+<h3>1.1.0 - 17.11.2007</h3>
+
+<ul>
+<li>Add Session State Store Provider</li>
+</ul>
+
+<h3>1.0 - 28.05.2007</h3>
+
+<ul>
+<li>Initial release</li>
+</ul>
+
+
+        </div>
+        <div class="span3">
+          <img src="/AspSQLProvider/img/logo.png" alt="F# Project" style="width:150px;margin:10px" />  
+          <ul class="nav nav-list" id="menu" style="margin-top: 20px;">
+            <li class="nav-header">NauckIT.PostgreSQLProvider</li>
+            <li><a href="/AspSQLProvider/index.html">Home page</a></li>
+            <li class="divider"></li>
+            <li><a href="http://nuget.org/packages/NauckIT.PostgreSQLProvider">Get Library via NuGet</a></li>
+            <li><a href="http://github.com/dnauck/AspSQLProvider">Source Code on GitHub</a></li>
+            <li><a href="/AspSQLProvider/license.html">License</a></li>
+            <li><a href="/AspSQLProvider/release-notes.html">Release Notes</a></li>
+
+            <li class="nav-header">Documentation</li>
+            <li><a href="/AspSQLProvider/installation.html">Installation</a></li>
+            <li><a href="/AspSQLProvider/configuration.html">Configuration</a></li>
+            <li><a href="/AspSQLProvider/debugging.html">Debugging</a></li>
+            <li><a href="/AspSQLProvider/reference/index.html">API Reference</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <a href="http://github.com/dnauck/AspSQLProvider"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"/></a>
+  </body>
+  </html>
