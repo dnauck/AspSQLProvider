@@ -56,7 +56,7 @@ let gitOwner = "dnauck"
 let gitHome = "https://github.com/" + gitOwner
 
 // The name of the project on GitHub
-let gitName = "NauckIT.PostgreSQLProvider"
+let gitName = "AspSQLProvider"
 
 // The url for the raw files hosted
 let gitRaw = environVarOrDefault "gitRaw" "https://raw.github.com/dnauck"
