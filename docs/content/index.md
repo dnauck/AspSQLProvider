@@ -49,9 +49,9 @@ the project and submit pull requests.
 The library is available under MIT/X11 license, which allows modification and 
 redistribution for both commercial and non-commercial purposes. For more information see the [License file][license] in the GitHub repository. 
 
-  [content]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/tree/master/docs/content
-  [gh]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider
-  [issues]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/issues
-  [readme]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/blob/master/README.md
-  [license]: https://github.com/fsprojects/NauckIT.PostgreSQLProvider/blob/master/LICENSE.txt
+  [content]: https://github.com/dnauck/AspSQLProvider/tree/master/docs/content
+  [gh]: https://github.com/dnauck/AspSQLProvider
+  [issues]: https://github.com/dnauck/AspSQLProvider/issues
+  [readme]: https://github.com/dnauck/AspSQLProvider/blob/master/README.md
+  [license]: https://github.com/dnauck/AspSQLProvider/blob/master/LICENSE.txt
   [nuget]: http://nuget.org/List/Packages/NauckIT.PostgreSQLProvider
