@@ -37,17 +37,16 @@ Run the build script `build.cmd` on Windows or `build.sh` on Unix.
 
 ## Setup
 
-1. Copy the `NauckIT.PostgreSQLProvider.dll` into the ~/Bin directory of your Web Application.
+1.) Copy the `NauckIT.PostgreSQLProvider.dll` into the ~/Bin directory of your Web Application.
 
-2. Add the PostgreSQL connection string into you Web.config, e.g.:
+2.) Add the PostgreSQL connection string into you Web.config, e.g.:
 
     <connectionStrings>
     	<clear />
     	<add name="AspSQLProvider" connectionString="Server=localhost;Port=5432;Database=website_user;User Id=username;Password=mypassword;Encoding=UNICODE;Sslmode=Prefer;Pooling=true;"/>
     </connectionStrings>
 
-
-3. Add and enable the AspSQLProvider in your Web.config, e.g.:
+3.) Add and enable the AspSQLProvider in your Web.config, e.g.:
 
     <authentication mode="Forms">
     	<forms name=".AspNetAuth" protection="All" defaultUrl="~/Default.aspx" 
@@ -92,8 +91,8 @@ Run the build script `build.cmd` on Windows or `build.sh` on Unix.
     </sessionState>
 **Warning:** use your own machineKey for security reasons. [Here](http://www.leastprivilege.com/MSDNUSWebCastAuthenticationAndAuthorizationWithASPNET20.aspx) is a nice tool for generating keys inside the slides zip file, called GenerateMachineKey.
 
-4. Create the PostgreSQL database schema with the provided DatabaseSchema.sql script.
+4.) Create the PostgreSQL database schema with the provided DatabaseSchema.sql script.
 
-5. After creating the tables, double check the global schema search path and make sure the schema in which you placed the tables is referenced in the current search path. If not, edit the global config file, add the schema to the search path, and restart the postgres server. Otherwise, the ASP.NET configuration will not be able to find the tables.
+5.) After creating the tables, double check the global schema search path and make sure the schema in which you placed the tables is referenced in the current search path. If not, edit the global config file, add the schema to the search path, and restart the postgres server. Otherwise, the ASP.NET configuration will not be able to find the tables.
 
   [nuget]: http://nuget.org/List/Packages/NauckIT.PostgreSQLProvider
