@@ -1,5 +1,5 @@
 //
-// Copyright © 2006 - 2013 Nauck IT KG		http://www.nauck-it.de
+// Copyright ï¿½ 2006 - 2013 Nauck IT KG		http://www.nauck-it.de
 //
 // Author:
 //	Daniel Nauck		<d.nauck(at)nauck-it.de>
@@ -1155,9 +1155,13 @@ namespace NauckIT.PostgreSQLProvider
         /// </summary>
         public override void UpdateUser(MembershipUser user)
         {
-            // validate duplicate email address, see issue #29
-            if (RequiresUniqueEmail && !string.IsNullOrEmpty(GetUserNameByEmail(user.Email)))
-                throw new ProviderException("Duplicate E-mail address. The E-mail supplied is invalid.");
+            // validate duplicate email address sking itself, see issue #29
+            if (RequiresUniqueEmail)
+            {
+                string userName = GetUserNameByEmail(user.Email);
+                if (!string.IsNullOrEmpty(userName) && !userName.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase))
+                    throw new ProviderException("The e-mail address that you entered is already in use. Please enter a different e-mail address.");
+            }
 
             using (NpgsqlConnection dbConn = new NpgsqlConnection(m_connectionString))
             {
